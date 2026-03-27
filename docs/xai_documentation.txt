@@ -1,0 +1,94 @@
+Explainable AI Framework – Project CHAITRA
+1. Introduction
+
+To enhance transparency and interpretability, Project CHAITRA integrates Explainable AI (XAI) using SHAP (SHapley Additive Explanations). This ensures that model predictions are interpretable at both global and instance levels.
+
+2. Model Under Explanation
+
+Algorithm: XGBoost Regressor
+
+Dataset: Refined feature set (9 high-impact features)
+
+Target Variable: Weekly Sales
+
+3. SHAP Methodology
+
+SHAP leverages cooperative game theory to compute feature-level contributions to individual predictions.
+
+Prediction is decomposed as:
+
+Prediction=BaseValue+∑FeatureContributions
+
+Where:
+
+Base Value = Mean prediction
+
+Feature Contribution = Impact of each feature
+
+4. Global Interpretability
+
+Global feature importance was derived using:
+
+Mean absolute SHAP values
+
+SHAP summary plots
+
+Bar ranking visualization
+
+Key drivers identified:
+
+sales_lag_1
+
+sales_lag_2
+
+store_sales_ratio
+
+dept_sales_ratio
+
+isholiday
+
+5. Local Interpretability
+
+Instance-level explanations were generated using:
+
+SHAP waterfall plots
+
+SHAP force plots
+
+Contribution ranking extraction
+
+This allows interpretation of individual predictions.
+
+6. Business-Level Explanation Layer
+
+Structured rule-based templates were created to convert numerical SHAP outputs into human-readable business explanations.
+
+Example:
+
+“The projected sales increase is primarily driven by strong performance in previous weeks and favorable holiday conditions.”
+
+7. Explanation Validation
+
+Validation techniques included:
+
+Top feature frequency analysis
+
+SHAP variance stability testing
+
+Correlation consistency checks
+
+Cross-instance explanation comparison
+
+Results indicated stable and logically coherent explanations.
+
+8. Conclusion
+
+The XAI framework in Project CHAITRA ensures:
+
+Transparency
+
+Trustworthiness
+
+Business-aligned reasoning
+
+Foundation for hybrid ML-LLM integration

@@ -1,0 +1,26 @@
+# Ignore environments
+.venv/
+chaitra_env/
+
+# Ignore research + data
+transformer_research/
+data/
+
+# Ignore model + binary files
+*.pkl
+*.bin
+*.pt
+*.pth
+
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# Env files
+.env

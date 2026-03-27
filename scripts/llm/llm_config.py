@@ -1,0 +1,8 @@
+MODEL_NAME="microsoft/phi-2"
+
+MAX_NEW_TOKENS=150
+TEMPERATURE=0.7
+TOP_P=0.9
+
+DEVICE_MAP="auto"
+TORCH_DTYPE="auto"
