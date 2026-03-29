@@ -16,3 +16,6 @@ torch
 optimum
 sentence-transformers
 faiss-cpu
+fastapi
+uvicorn
+tf-keras
