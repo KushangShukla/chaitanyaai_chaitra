@@ -9,6 +9,7 @@ import joblib
 from scripts.ml.model_manager import ModelManager
 from scripts.ml.feature_extractor import FeatureExtractor
 from scripts.ml.feature_store import FeatureStore
+from scripts.ml.schema_mapper import SchemaMapper
 
 class QueryRouter:
 
@@ -20,22 +21,26 @@ class QueryRouter:
         self.model_manager=ModelManager()
         self.model_manager=FeatureExtractor()
         self.model_manager=FeatureStore()
+        self.model_manager=SchemaMapper()
         #self.ml_model=joblib.load(r"D:/Projects/CHAITRA/data/Outputs/final_model_production/final_model_production.pkl")
 
     def run_ml(self,query,user_id="default_user"):
         try:
 
             # Extract Features
-            features_dict=self.features_extractor.extract(query)
+            raw_features=self.features_extractor.extract(query)
+
+            # Map shcema -> standard format
+            mapped_features=self.schema_mapper.map_features(raw_features)
 
             # Save features (DB)
-            self.feature_store.save(user_id,query,features_dict)
+            self.feature_store.save(user_id,query,mapped_features)
 
             # Convert dict-> list (model input)
-            features=list(features_dict.values())
+            features=list(mapped_features.values())
 
             prediction=self.model_manager.predict(query,features)
-            return f"Predicted value is {round(prediction,2)} using features {features_dict}"
+            return f"Predicted value is {round(prediction,2)} using features {mapped_features}"
             
         except Exception as e:
             return f"ML Error:{str(e)}"

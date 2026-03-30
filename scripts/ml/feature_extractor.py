@@ -7,20 +7,20 @@ class FeatureExtractor:
         query=query.lower()
         features={}
 
-        # Store
-        store_match=re.search(r"store\s*(\d+)",query)
-        if store_match:
-            features["store"]=int(store_match.group(1))
+        # Store/outlet/branch
+        match=re.search(r"(store|outlest|branch)\s*(\d+)",query)
+        if match:
+            features[match.group(1)]=int(match.group(2))
 
-        # Fuel Price
-        fuel_match=re.search(r"fuel\s*price\s*(\d+\.?\d*)",query)
-        if fuel_match:
-            features["fuel_price"]=float(fuel_match.group(1))
+        # Fuel Price/petrol
+        match=re.search(r"(fuel price|petrol|energy cost)\s*(\d+\.?\d*)",query)
+        if match:
+            features[match.group(1)]=float(match.group(2))
 
-        # CPI
-        cpi_match=re.search(r"cpi\s*(\d+\.?\d*)",query)
-        if cpi_match:
-            features["cpi"]=float(cpi_match.group(1))
+        # CPI/inflation
+        match=re.search(r"(cpi|inflation|price index)\s*(\d+\.?\d*)",query)
+        if match:
+            features[match.group(1)]=float(match.group(2))
 
         # Default fallback
         if not features:
