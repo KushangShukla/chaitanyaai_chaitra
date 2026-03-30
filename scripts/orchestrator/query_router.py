@@ -4,6 +4,8 @@ from scripts.memory.vector_memory import VectorMemory
 from scripts.memory.memory_manager import MemoryManager
 from scripts.memory.context_builder import build_memory_context
 from scripts.utils.error_handler import safe_exectue
+from scripts.utils.logger import log
+import joblib
 
 class QueryRouter:
 
@@ -12,24 +14,74 @@ class QueryRouter:
         self.memory=MemoryManager()
         self.vector_memory=VectorMemory()
 
+        self.ml_model=joblib.load(r"D:/Projects/CHAITRA/data/Outputs/final_model_production/final_model_production.pkl")
+
+    def run_ml(self,query):
+        try:
+            features=[1,2,3,4,5,6,7,8,9]
+
+            prediction=self.ml_model.predict([features])[0]
+
+            return f"Predicted value is {round(prediction,2)}"
+            
+        except Exception as e:
+            return f"ML Error:{str(e)}"
+
     def route(self,query,user_id="default_user",role="user"):
+        log (f"Query: {query}")
+        print("Query Received:",query)
+        
+        # Detect Intent
+        intent=self.detect_intnet(query)
 
         # Get Memory
         history=self.memory.get_recent_history(user_id)
-        memory_context=build_memory_context(history)
+        memory_context=build_memory_context(history[:2])
         vector_context=self.vector_memory.search_memory(query)
+        
+        if intent=="ml_prediction":
+            response=self.run_ml(query)
 
-        # Decide Pipeline
-        if "why" in query.lower() or "explain" in query.lower():
+        elif intent=="rag_explanation":
             rag_context=retrieve_context(query)
 
-            final_context=memory_context +"\n" + vector_context + "\n" + rag_context
+            clean_context=rag_context[:1000]
 
-            response=self.llm.generate_rag_response(final_context,query)
-        
+            rag_prompt=f"""
+            You are CHAITRA, an AI business analyst.
+
+            Use the following business context to answer the question.
+            Do NOT include code.
+            Do NOT repeat the context.
+            Answer in 3–5 lines with clear business insight.
+
+            Context:
+            {clean_context}
+
+            Question:
+            {query} 
+            """
+
+            response=self.llm.generate(rag_prompt)
+
         else:
-            prompt=memory_context+"\nQuestion: " +query
+            prompt=f"""
+            You are CHAITRA , an AI business assistant.
+
+            Answer the question clearly in 3-5 lines.
+            Do NOT include code.
+            Do NOT repeat instructions.
+            
+            Question:
+            {query}
+            """
             response=self.llm.generate(prompt)
+
+        if "import" in response or "model=" in response:
+            response="The system detected irrelevant context. Please refine your query."
+
+        log(f"Response: {response}")
+        print("Final Response:",response)
 
         # Save Chat
         self.memory.save_chat(user_id,role,query,response)
@@ -46,14 +98,3 @@ class QueryRouter:
             return "rag_explanation"
         
         return "general_llm"
-    
-    def route(self,query):
-        intent=self.detect_intnet(query)
-
-        if intent=="rag":
-            return safe_exectue(self.rag_engine,query)
-        
-        if intent=="ml":
-            return safe_exectue(self.ml_engine,query)
-        
-        return safe_exectue(self.llm.engine.generate_business_reponse,query)

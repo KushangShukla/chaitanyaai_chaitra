@@ -15,4 +15,9 @@ def handle_query(request:QueryRequest):
     user_query=request.query
 
     response=query_router.route(user_query)
-    return {"response": response}
+    return {
+        "query":user_query,
+        "response":response,
+        "source":"rag" if "why" in user_query.lower() else "llm",
+        "status":"success"
+    }

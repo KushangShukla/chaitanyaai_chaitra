@@ -19,3 +19,5 @@ faiss-cpu
 fastapi
 uvicorn
 tf-keras
+bitsandbytes
+accelerate

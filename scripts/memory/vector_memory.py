@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 
 class VectorMemory:
 
-    def __init(self):
+    def __init__(self):
         self.model=SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
         self.index_path="scripts/memory/chat_memory.index"
@@ -35,6 +35,8 @@ class VectorMemory:
             pickle.dump(self.data,f)
             
     def search_memory(self,query,top_k=3):
+        if len(self.data)==0:
+            return ""
 
         embedding=self.model.encode([query])
 
@@ -43,7 +45,7 @@ class VectorMemory:
         results=[]
 
         for i in indices[0]:
-            if i<len(self.data):
+            if i !=-1 and i<len(self.data):
                 results.append(self.data[i])
             
         return "\n".join(results)
