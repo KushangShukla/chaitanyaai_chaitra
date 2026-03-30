@@ -10,6 +10,7 @@ from scripts.ml.model_manager import ModelManager
 from scripts.ml.feature_extractor import FeatureExtractor
 from scripts.ml.feature_store import FeatureStore
 from scripts.ml.schema_mapper import SchemaMapper
+from scripts.ml.data_collector import DataCollector
 
 class QueryRouter:
 
@@ -22,6 +23,7 @@ class QueryRouter:
         self.model_manager=FeatureExtractor()
         self.model_manager=FeatureStore()
         self.model_manager=SchemaMapper()
+        self.data_collector=DataCollector()
         #self.ml_model=joblib.load(r"D:/Projects/CHAITRA/data/Outputs/final_model_production/final_model_production.pkl")
 
     def run_ml(self,query,user_id="default_user"):
@@ -40,6 +42,10 @@ class QueryRouter:
             features=list(mapped_features.values())
 
             prediction=self.model_manager.predict(query,features)
+
+            # Save for retraining (simulate target)
+            self.data_collector.save(mapped_features,prediction)
+            
             return f"Predicted value is {round(prediction,2)} using features {mapped_features}"
             
         except Exception as e:
