@@ -6,6 +6,9 @@ from scripts.memory.context_builder import build_memory_context
 from scripts.utils.error_handler import safe_exectue
 from scripts.utils.logger import log
 import joblib
+from scripts.ml.model_manager import ModelManager
+from scripts.ml.feature_extractor import FeatureExtractor
+from scripts.ml.feature_store import FeatureStore
 
 class QueryRouter:
 
@@ -14,15 +17,25 @@ class QueryRouter:
         self.memory=MemoryManager()
         self.vector_memory=VectorMemory()
 
-        self.ml_model=joblib.load(r"D:/Projects/CHAITRA/data/Outputs/final_model_production/final_model_production.pkl")
+        self.model_manager=ModelManager()
+        self.model_manager=FeatureExtractor()
+        self.model_manager=FeatureStore()
+        #self.ml_model=joblib.load(r"D:/Projects/CHAITRA/data/Outputs/final_model_production/final_model_production.pkl")
 
-    def run_ml(self,query):
+    def run_ml(self,query,user_id="default_user"):
         try:
-            features=[1,2,3,4,5,6,7,8,9]
 
-            prediction=self.ml_model.predict([features])[0]
+            # Extract Features
+            features_dict=self.features_extractor.extract(query)
 
-            return f"Predicted value is {round(prediction,2)}"
+            # Save features (DB)
+            self.feature_store.save(user_id,query,features_dict)
+
+            # Convert dict-> list (model input)
+            features=list(features_dict.values())
+
+            prediction=self.model_manager.predict(query,features)
+            return f"Predicted value is {round(prediction,2)} using features {features_dict}"
             
         except Exception as e:
             return f"ML Error:{str(e)}"
