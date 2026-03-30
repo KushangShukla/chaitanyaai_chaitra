@@ -11,6 +11,7 @@ from scripts.ml.feature_extractor import FeatureExtractor
 from scripts.ml.feature_store import FeatureStore
 from scripts.ml.schema_mapper import SchemaMapper
 from scripts.ml.data_collector import DataCollector
+from scripts.ml.automl_trainer import AutoMLTrainer
 
 class QueryRouter:
 
@@ -24,6 +25,8 @@ class QueryRouter:
         self.model_manager=FeatureStore()
         self.model_manager=SchemaMapper()
         self.data_collector=DataCollector()
+        self.trainer=AutoMLTrainer()
+        self.retrain_threshold=20 
         #self.ml_model=joblib.load(r"D:/Projects/CHAITRA/data/Outputs/final_model_production/final_model_production.pkl")
 
     def run_ml(self,query,user_id="default_user"):
@@ -45,7 +48,15 @@ class QueryRouter:
 
             # Save for retraining (simulate target)
             self.data_collector.save(mapped_features,prediction)
-            
+
+            # Check threshold
+            count=self.data_collector.get_count()
+            print("Training data count:",count)
+
+            if count>= self.retrain_threshold and count % self.retrain_threshold ==0:
+                print("Triggering Auto Retraining...")
+                self.trainer.train()
+
             return f"Predicted value is {round(prediction,2)} using features {mapped_features}"
             
         except Exception as e:

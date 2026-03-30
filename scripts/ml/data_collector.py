@@ -22,3 +22,7 @@ class DataCollector:
             (json.dumps(features),target)
         )
         self.conn.commit()
+
+    def get_count(self):
+        self.cursor.execute("SELECT COUNT(*) FROM training_data")
+        return self.cursor.fetchone()[0]
