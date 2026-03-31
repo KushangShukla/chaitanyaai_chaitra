@@ -1,0 +1,1 @@
+SELECT * 'chat_history';

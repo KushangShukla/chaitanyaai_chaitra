@@ -12,6 +12,7 @@ from scripts.ml.feature_store import FeatureStore
 from scripts.ml.schema_mapper import SchemaMapper
 from scripts.ml.data_collector import DataCollector
 from scripts.ml.automl_trainer import AutoMLTrainer
+from scripts.ml.feature_formatter import FeatureFormatter
 
 class QueryRouter:
 
@@ -21,28 +22,47 @@ class QueryRouter:
         self.vector_memory=VectorMemory()
 
         self.model_manager=ModelManager()
-        self.model_manager=FeatureExtractor()
-        self.model_manager=FeatureStore()
-        self.model_manager=SchemaMapper()
+        self.schema_mapper=SchemaMapper()
         self.data_collector=DataCollector()
         self.trainer=AutoMLTrainer()
         self.retrain_threshold=20 
+        self.feature_extractor=FeatureExtractor()
+        self.feature_store=FeatureStore()
+        self.feature_formatter=FeatureFormatter()
         #self.ml_model=joblib.load(r"D:/Projects/CHAITRA/data/Outputs/final_model_production/final_model_production.pkl")
 
     def run_ml(self,query,user_id="default_user"):
         try:
 
             # Extract Features
-            raw_features=self.features_extractor.extract(query)
+            raw_features=self.feature_extractor.extract(query)
+            print("RAW FEATURES:",raw_features)
 
             # Map shcema -> standard format
             mapped_features=self.schema_mapper.map_features(raw_features)
+            print("MAPPED FEATURES:",mapped_features)
+
+            # Safety Check
+            if raw_features is None:
+                return "ERROR: raw_features is None"
+            
+            if mapped_features is None:
+                return "Error: mapped_features is None"
+
+            if not isinstance (mapped_features,dict):
+                return f"ERROR: mapped_features not dict: {mapped_features}"
+            
+            if len(mapped_features)==0:
+                return "ERROR: mapped_features empty"
 
             # Save features (DB)
-            self.feature_store.save(user_id,query,mapped_features)
+            #self.feature_store.save(user_id,query,mapped_features)
 
             # Convert dict-> list (model input)
-            features=list(mapped_features.values())
+            #if not mapped_features:
+                #raise ValueError("No Features Extracted")
+            
+            features=self.feature_formatter.format(mapped_features)
 
             prediction=self.model_manager.predict(query,features)
 
@@ -50,16 +70,17 @@ class QueryRouter:
             self.data_collector.save(mapped_features,prediction)
 
             # Check threshold
-            count=self.data_collector.get_count()
-            print("Training data count:",count)
+            #count=self.data_collector.get_count()
+            #print("Training data count:",count)
 
-            if count>= self.retrain_threshold and count % self.retrain_threshold ==0:
-                print("Triggering Auto Retraining...")
-                self.trainer.train()
+            #if count>= self.retrain_threshold and count % self.retrain_threshold ==0:
+                #print("Triggering Auto Retraining...")
+                #self.trainer.train()
 
-            return f"Predicted value is {round(prediction,2)} using features {mapped_features}"
+            return f"Predicted value is {round(prediction,2)} using {mapped_features}"
             
         except Exception as e:
+            print("FULL ERROR:",e)
             return f"ML Error:{str(e)}"
 
     def route(self,query,user_id="default_user",role="user"):

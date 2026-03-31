@@ -11,10 +11,10 @@ class DataCollector:
             host="localhost",
             port="5432"
         )
-        self.cursor=self.conn,self.cursor()
+        self.cursor=self.conn.cursor()
 
     def save(self,features,target):
-        self.cursor.executea(
+        self.cursor.executes(
             """
             INSERT INTO training_data (features,target)
             VALUES (%s,%s)            
