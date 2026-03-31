@@ -67,7 +67,7 @@ class QueryRouter:
             prediction=self.model_manager.predict(query,features)
 
             # Save for retraining (simulate target)
-            self.data_collector.save(mapped_features,prediction)
+            self.data_collector.save(mapped_features,float(prediction))
 
             # Check threshold
             #count=self.data_collector.get_count()
@@ -77,7 +77,7 @@ class QueryRouter:
                 #print("Triggering Auto Retraining...")
                 #self.trainer.train()
 
-            return f"Predicted value is {round(prediction,2)} using {mapped_features}"
+            return f"Predicted value is {round(float(prediction),2)} using {mapped_features}"
             
         except Exception as e:
             print("FULL ERROR:",e)
