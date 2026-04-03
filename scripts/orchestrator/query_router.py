@@ -13,6 +13,7 @@ from scripts.ml.schema_mapper import SchemaMapper
 from scripts.ml.data_collector import DataCollector
 from scripts.ml.automl_trainer import AutoMLTrainer
 from scripts.ml.feature_formatter import FeatureFormatter
+from scripts.utils.querry_logger import QueryLogger
 
 class QueryRouter:
 
@@ -29,12 +30,16 @@ class QueryRouter:
         self.feature_extractor=FeatureExtractor()
         self.feature_store=FeatureStore()
         self.feature_formatter=FeatureFormatter()
+        self.query_logger=QueryLogger()
         #self.ml_model=joblib.load(r"D:/Projects/CHAITRA/data/Outputs/final_model_production/final_model_production.pkl")
 
-    def run_ml(self,query,user_id="default_user"):
+    def run_ml(self,query,user_id="default_user",input_type="text"):
+        import time
+        start_time=time.time()
+
         try:
 
-            # Extract Features
+            # Step 1: Extract Features
             raw_features=self.feature_extractor.extract(query)
             print("RAW FEATURES:",raw_features)
 
@@ -49,12 +54,9 @@ class QueryRouter:
             if mapped_features is None:
                 return "Error: mapped_features is None"
 
-            if not isinstance (mapped_features,dict):
-                return f"ERROR: mapped_features not dict: {mapped_features}"
-            
-            if len(mapped_features)==0:
-                return "ERROR: mapped_features empty"
-
+            if not isinstance (mapped_features,dict) or len(mapped_features)==0:
+                return f"ERROR:Invalid feateres"
+    
             # Save features (DB)
             #self.feature_store.save(user_id,query,mapped_features)
 
@@ -62,13 +64,45 @@ class QueryRouter:
             #if not mapped_features:
                 #raise ValueError("No Features Extracted")
             
+            # Format features
             features=self.feature_formatter.format(mapped_features)
 
+            # Prediction
             prediction=self.model_manager.predict(query,features)
+            
+            # Structured response
+            
+            response=f"""
+            Key Insight:
+            Predicted sales is {round(float(prediction),2)}
+
+            Recommendation:
+            Optimize pricing and montior CPI & fuel trends for better forecasting.
+
+            Risk:
+            External factors like unemployment and inflation many affect accuracy.
+            """
 
             # Save for retraining (simulate target)
             self.data_collector.save(mapped_features,float(prediction))
 
+            # Latency
+            latency=round(time.tim()- start_time,3)
+
+            # Log Everything
+            self.query_logger.log({
+                "user_id":user_id,
+                "query":query,
+                "input_type":input_type,
+                "model":"ml",
+                "model_used":"sales_model_v1",
+                "features":mapped_features,
+                "prediction":float(prediction),
+                "response":response,
+                "latency":latency
+            })
+
+            return response.strip()
             # Check threshold
             #count=self.data_collector.get_count()
             #print("Training data count:",count)
