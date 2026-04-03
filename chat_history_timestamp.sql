@@ -1,1 +1,0 @@
-SELECT * 'chat_history';
