@@ -83,7 +83,84 @@ class QueryRouter:
             print("FULL ERROR:",e)
             return f"ML Error:{str(e)}"
 
-    def route(self,query,user_id="default_user",role="user"):
+    def route(self, query, user_id="default_user", role="user"):
+    
+        log(f"Query: {query}")
+        print("Query Received:", query)
+
+        response = None  #  FIX 1
+
+        try:
+            intent = self.detect_intnet(query)
+
+            history = self.memory.get_recent_history(user_id)
+            memory_context = build_memory_context(history[:2])
+
+            vector_context = ""
+            if intent == "rag_explanation":
+                vector_context = self.vector_memory.search_memory(query)
+
+            if intent == "ml_prediction":
+                response = self.run_ml(query)
+
+            elif intent == "rag_explanation":
+                rag_context = retrieve_context(query)
+
+                clean_context = rag_context[:800]
+
+                rag_prompt = f"""
+    ### Instruction:
+    You are CHAITRA, an AI business analyst.
+    Use the context to answer clearly with business insights.
+    Do not repeat context.
+    Do not include code.
+
+    ### Context:
+    {clean_context}
+
+    ### Question:
+    {query}
+
+    ### Response:
+    """
+                response = self.llm.generate(rag_prompt)
+
+            else:
+                prompt = f"""
+    ### Instruction:
+    You are CHAITRA, an AI business assistant.
+    Give a clear answer in 3-5 lines.
+    Do not include code.
+
+    ### Question:
+    {query}
+
+    ### Response:
+    """
+                response = self.llm.generate(prompt)
+
+        except Exception as e:
+            print("ROUTER ERROR:", e)
+            response = f"System error occurred: {str(e)}"
+
+        # SAFE CHECK (AFTER TRY)
+        if not response:
+            response = "I couldn't generate a response. Please try again."
+
+        # CLEAN OUTPUT
+        if isinstance(response, str):
+            if "import" in response or "model=" in response:
+                response = "The system detected irrelevant output. Please refine your query."
+
+        log(f"Response: {response}")
+        print("Final Response:", response)
+
+        # Save Chat
+        self.memory.save_chat(user_id, role, query, response)
+        self.vector_memory.add_memory(query, response)
+
+        return response
+    #def route(self,query,user_id="default_user",role="user"):
         log (f"Query: {query}")
         print("Query Received:",query)
         
@@ -103,38 +180,42 @@ class QueryRouter:
 
             clean_context=rag_context[:1000]
 
-            rag_prompt=f"""
-            You are CHAITRA, an AI business analyst.
+            rag_prompt = f"""
+                        ### Instruction:
+                        You are CHAITRA, an AI business analyst.
+                        Use the context to answer clearly with business insights.
+                        Do not repeat context.
+                        Do not include code.
 
-            Use the following business context to answer the question.
-            Do NOT include code.
-            Do NOT repeat the context.
-            Answer in 3–5 lines with clear business insight.
+                        ### Context:
+                        {clean_context[:800]}
 
-            Context:
-            {clean_context}
+                        ### Question:
+                        {query}
 
-            Question:
-            {query} 
-            """
+                        ### Response:
+                        """
 
             response=self.llm.generate(rag_prompt)
 
         else:
-            prompt=f"""
-            You are CHAITRA , an AI business assistant.
+            prompt = f"""
+            ### Instruction:
+            You are CHAITRA, an AI business assistant.
+            Give a clear, concise business-friendly answer in 3-5 lines.
+            Do not include code.
 
-            Answer the question clearly in 3-5 lines.
-            Do NOT include code.
-            Do NOT repeat instructions.
-            
-            Question:
+            ### Question:               
             {query}
+
+            ### Response:
             """
-            response=self.llm.generate(prompt)
 
         if "import" in response or "model=" in response:
             response="The system detected irrelevant context. Please refine your query."
+
+        if not response or len(response.strip()) < 5:
+            response = "I'm sorry, I couldn't generate a proper answer. Please try rephrasing your question."
 
         log(f"Response: {response}")
         print("Final Response:",response)

@@ -1,25 +1,31 @@
-import axios from "axios";
+//import axios from "axios";
 
-const ELEVEN_API_KEY=;
+let currentAudio: HTMLAudioElement | null=null;
 
 export const speak=async (text:string) => {
-    const response=await axios.post(
+    const apiKey=import.meta.env.VITE_ELEVEN_API_KEY;
+
+    if (currentAudio){
+        currentAudio.pause(); //interrupt
+    }
+
+    const response=await fetch(
         "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",
         {
-            text:text,
-            model_id:"eleven_monolingual_v1",
-        },
-        {
+            method:"POST",
             headers: {
-                "xi-api-key":ELEVEN_API_KEY,
+                "xi-api-key":apiKey,
                 "Content-Type":"application/json",
             },
-            responseType:"arraybuffer",
-        }
+            body:JSON.stringify({
+            text,
+            model_id:"eleven_monolingual_v1",
+            })
+        },
     );
-    const audioBlob=new Blob ([response.data], {type:"audio/mpeg"});
+    const audioBlob=await response.blob();
     const audioUrl=URL.createObjectURL(audioBlob);
 
-    const audio=new Audio (audioUrl);
-    audio.play();
+    currentAudio=new Audio (audioUrl);
+    currentAudio.play();
 };

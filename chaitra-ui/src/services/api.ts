@@ -6,11 +6,22 @@ const API= axios.create({
 
 export const sendQuery=async(query:string) => {
     try {
-        const res=await API.post("/query",{query});
-        console.log("API RESPONSE:",res.data); //debug
-        return res.data;
-    }   catch (err:any) {
-        console.error("API ERROR:",err);
-        throw err;
-    }
+        const res=await fetch ("http://127.0.0.1:8000/query",{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json",
+            },
+            body:JSON.stringify({query}),
+        });
+
+        const data=await res.json();
+        
+        console.log("API SUCCESS:",data);
+
+        return data;
+
+    } catch(err){
+    console.error("API ERROR:",err);   
+    throw err;
+    }    
 };

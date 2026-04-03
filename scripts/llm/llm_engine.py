@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM,BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from .llm_config import *
 from .prompt_templates import business_explanation_prompt, rag_prompt
 
@@ -10,43 +10,43 @@ class LLMEngine:
         self.tokenizer=AutoTokenizer.from_pretrained(MODEL_NAME)
 
         print("Loading model...")
-        bnb_config=BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type="nf4"
-        )
-
+        
         self.model=AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
-            device_map="auto",
-            quantization_config=bnb_config
+            device_map=DEVICE_MAP,
+            torch_dtype=TORCH_DTYPE
         )
 
         print("LLM loaded successfully.")
 
-    def generate(self,prompt):
-        
-        inputs=self.tokenizer(prompt,return_tensors="pt").to(self.model.device)
+    def generate(self, prompt):
+    
+        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
 
         with torch.no_grad():
-            outputs=self.model.generate(
+            outputs = self.model.generate(
                 **inputs,
-                max_new_tokens=MAX_NEW_TOKENS,
-                temperature=TEMPERATURE,
-                top_p=TOP_P,
-                do_sample=True
+                max_new_tokens=80,   # reduced for speed
+                temperature=0.7,
+                top_p=0.9,
+                do_sample=True,
+                eos_token_id=self.tokenizer.eos_token_id
             )
 
-        response=self.tokenizer.decode(outputs[0],skip_special_tokens=True)
-        
-        # Remove prompt echo
-        response=response.replace(prompt, "").strip()
+        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-        # Remove code contamination
-        for stop_word in ["return","def","import","class"]:
+        # Extract ONLY response section (IMPORTANT)
+        if "### Response:" in response:
+            response = response.split("### Response:")[-1].strip()
+
+        # Remove prompt leftovers
+        response = response.replace(prompt, "").strip()
+
+        # Remove garbage/code
+        for stop_word in ["def ", "class ", "import ", "return "]:
             if stop_word in response:
-                response=response.split(stop_word)[0]
+                response = response.split(stop_word)[0]
+
         return response.strip()
     
     def generate_business_response(self,question):
