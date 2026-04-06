@@ -72,22 +72,32 @@ class QueryRouter:
             
             # Structured response
             
-            response=f"""
+            response=prompt = f"""
+            You are CHAITRA, an AI business assistant.
+
+            Answer clearly in structured format:
+
             Key Insight:
-            Predicted sales is {round(float(prediction),2)}
+            - ...
 
             Recommendation:
-            Optimize pricing and montior CPI & fuel trends for better forecasting.
+            - ...
 
             Risk:
-            External factors like unemployment and inflation many affect accuracy.
+            - ...
+
+            Do NOT generate code.
+            Do NOT repeat instructions.
+
+            Question:
+            {query}
             """
 
             # Save for retraining (simulate target)
             self.data_collector.save(mapped_features,float(prediction))
 
             # Latency
-            latency=round(time.tim()- start_time,3)
+            latency=round(time.time()- start_time,3)
 
             # Log Everything
             self.query_logger.log({

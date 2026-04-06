@@ -19,16 +19,13 @@ class LLMEngine:
         print("LLM loaded successfully.")
 
     def generate(self, prompt):
-
+    
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
-
-        # dynamic token control
-        max_tokens = min(150, len(prompt) // 2 + 50)
 
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
-                max_new_tokens=max_tokens,   # FIXED
+                max_new_tokens=200,
                 temperature=0.7,
                 top_p=0.9,
                 do_sample=True,
@@ -37,21 +34,19 @@ class LLMEngine:
 
         response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-        # extract response only
-        if "### Response:" in response:
-            response = response.split("### Response:")[-1].strip()
-
-        # remove prompt echo
+        #  Remove prompt echo
         response = response.replace(prompt, "").strip()
 
-        # remove garbage/code
-        for stop_word in ["def ", "class ", "import ", "return "]:
-            if stop_word in response:
-                response = response.split(stop_word)[0]
+        #  HARD CLEAN (IMPORTANT)
+        stop_tokens = ["def ", "class ", "import ", "return ", "if ", "#", "```"]
 
-        # final length control
-        if len(response) > 300:
-            response = response[:300] + "..."
+        for token in stop_tokens:
+            if token in response:
+                response = response.split(token)[0]
+
+        #  Ensure structured output fallback
+        if len(response.strip()) < 5:
+            return "I can help with business insights, predictions, and analysis. Please try rephrasing your question."
 
         return response.strip()
     
