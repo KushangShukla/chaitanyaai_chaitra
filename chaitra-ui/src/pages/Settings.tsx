@@ -1,13 +1,24 @@
+import {useState} from "react";
 const Settings=() => {
-    return (
-        <div style={{padding: "30px" }}>
-            <h2> Settings</h2>
+    const[voice,setVoice]=useState(true);
+    const[theme,setTheme]=useState("dark");
 
-            <div className="glass">
-                <p> Voice Assistant: Enabled</p>
-                <p> Theme: Dark</p>
-                <p> Model: Phi-2</p>
-            </div>
+    return (
+        <div className="glass">
+            <h2>Settings</h2>
+
+            <label>
+                Voice:
+                <input type="checkbox" checked={voice} onChange={()=>setVoice(!voice)} />
+            </label>
+
+            <label>
+                Theme:
+                <select onChange={e=>setTheme(e.target.value)}>
+                    <option>dark</option>
+                    <option>light</option>
+                </select>
+            </label>
         </div>
     );
 };
