@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { sendQuery } from "../services/api";
 import { speak } from "../services/voice";
+import { motion } from "framer-motion";
 
-// Safe SpeechRecognition setup
+// Speech Recognition Setup
 let recognition: any;
 
 if (typeof window !== "undefined") {
@@ -24,7 +25,26 @@ const ChatBox = () => {
   >([]);
   const [isListening, setIsListening] = useState(false);
 
-  // 🎤 START LISTENING
+  //  AI Typing Effect
+  const typeText = (text: string, index: number) => {
+    let i = 0;
+    let temp = "";
+
+    const interval = setInterval(() => {
+      temp += text[i];
+      i++;
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[index] = { role: "bot", text: temp };
+        return updated;
+      });
+
+      if (i >= text.length) clearInterval(interval);
+    }, 12);
+  };
+
+  //  START LISTENING
   const startListening = () => {
     if (!recognition) return;
 
@@ -35,45 +55,37 @@ const ChatBox = () => {
       const transcript =
         event.results[event.results.length - 1][0].transcript;
 
-      setQuery(transcript);
-      handleSendAuto(transcript); //  auto send
+      handleSendAuto(transcript);
     };
 
     recognition.onend = () => {
-      if (isListening) recognition.start(); //  continuous loop
+      if (isListening) recognition.start();
     };
   };
 
-  // 🛑 STOP LISTENING
+  //  STOP
   const stopListening = () => {
     setIsListening(false);
-    if (recognition) recognition.stop();
+    recognition?.stop();
   };
 
-  // 🔁 AUTO SEND (VOICE MODE)
+  //  AUTO SEND (VOICE)
   const handleSendAuto = async (voiceText: string) => {
     if (!voiceText) return;
 
-    setMessages((prev) => [...prev, { role: "user", text: voiceText }]);
-
     setMessages((prev) => [
       ...prev,
+      { role: "user", text: voiceText },
       { role: "bot", text: "Thinking..." },
     ]);
+
+    const botIndex = messages.length + 1;
 
     try {
       const res = await sendQuery(voiceText);
 
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "bot",
-          text: res?.response || "No response from AI",
-        };
-        return updated;
-      });
-
-      speak(res.response); //  speak
+      typeText(res?.response || "No response", botIndex);
+      speak(res.response);
 
     } catch (err) {
       console.error(err);
@@ -84,142 +96,92 @@ const ChatBox = () => {
   const handleSend = async () => {
     if (!query) return;
 
-    setMessages((prev) => [...prev, { role: "user", text: query }]);
-
     const currentQuery = query;
-    setQuery("");
 
     setMessages((prev) => [
       ...prev,
+      { role: "user", text: currentQuery },
       { role: "bot", text: "Thinking..." },
     ]);
+
+    setQuery("");
+
+    const botIndex = messages.length + 1;
 
     try {
       const res = await sendQuery(currentQuery);
 
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "bot",
-          text: res.response,
-        };
-        return updated;
-      });
-
+      typeText(res.response, botIndex);
       speak(res.response);
 
     } catch (err) {
       console.error(err);
-
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "bot",
-          text: "Error connecting to server",
-        };
-        return updated;
-      });
     }
   };
 
   return (
     <div style={{ padding: "20px" }}>
-      {/* Chat Messages */}
+
+      {/*  CHAT AREA */}
       <div
         style={{
-          height: "400px",
+          height: "500px",
           overflowY: "auto",
           marginBottom: "20px",
         }}
       >
         {messages.map((msg, i) => (
-          <div
+          <motion.div
             key={i}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
             style={{
               textAlign: msg.role === "user" ? "right" : "left",
-              margin: "10px 0",
+              margin: "12px 0",
             }}
           >
             <span
+              className={`glass ${msg.role === "bot" ? "typing" : ""}`}
               style={{
                 background:
-                  msg.role === "user" ? "#2563eb" : "#1e293b",
-                padding: "10px",
-                borderRadius: "10px",
+                  msg.role === "user"
+                    ? "#2563eb"
+                    : "rgba(255,255,255,0.05)",
+                padding: "12px",
+                borderRadius: "12px",
                 display: "inline-block",
+                maxWidth: "70%",
               }}
             >
               {msg.text}
             </span>
-          </div>
+          </motion.div>
         ))}
       </div>
 
-      {/* Listening Indicator */}
+      {/*  LISTENING UI */}
       {isListening && (
-        <div style={{ color: "#22c55e", marginBottom: "10px" }}>
-          🎤 Listening...
+        <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+          <div className="pulse"></div>
+          <div className="wave"></div>
+          <span style={{ color: "#22c55e" }}>Listening...</span>
         </div>
       )}
 
-      {/* Input Area */}
+      {/* INPUT AREA */}
       <div>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Ask CHAITRA..."
-          style={{
-            padding: "10px",
-            width: "60%",
-            borderRadius: "8px",
-            border: "none",
-          }}
         />
 
-        {/* Send Button */}
-        <button
-          onClick={handleSend}
-          style={{
-            padding: "10px",
-            marginLeft: "10px",
-            borderRadius: "8px",
-            background: "#2563eb",
-            color: "white",
-            border: "none",
-          }}
-        >
-          Send
-        </button>
+        <button onClick={handleSend}>Send</button>
 
-        {/* 🎤 Start / Stop */}
         {!isListening ? (
-          <button
-            onClick={startListening}
-            style={{
-              padding: "10px",
-              marginLeft: "10px",
-              borderRadius: "8px",
-              background: "#16a34a",
-              color: "white",
-              border: "none",
-            }}
-          >
-            Start
-          </button>
+          <button onClick={startListening}>🎤</button>
         ) : (
-          <button
-            onClick={stopListening}
-            style={{
-              padding: "10px",
-              marginLeft: "10px",
-              borderRadius: "8px",
-              background: "#dc2626",
-              color: "white",
-              border: "none",
-            }}
-          >
-            Stop
-          </button>
+          <button onClick={stopListening}>🛑</button>
         )}
       </div>
     </div>

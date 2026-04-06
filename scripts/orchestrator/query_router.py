@@ -154,7 +154,15 @@ class QueryRouter:
     ### Question:
     {query}
 
-    ### Response:
+    ### Response:f
+    Key Insight:
+    ...
+
+    Recommendation:
+    ...
+
+    Risk:
+    ...
     """
                 response = self.llm.generate(rag_prompt)
 
@@ -170,7 +178,15 @@ class QueryRouter:
     ### Question:
     {query}
 
-    ### Response:
+    ### Response:f
+    Key Insight:
+    ...
+
+    Recommendation:
+    ...
+
+    Risk:
+    ...
     """
                 response = self.llm.generate(prompt)
 

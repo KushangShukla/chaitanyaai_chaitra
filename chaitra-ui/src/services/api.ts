@@ -13,7 +13,6 @@ export const sendQuery=async(query:string) => {
             },
             body:JSON.stringify({query}),
         });
-
         const data=await res.json();
         
         console.log("API SUCCESS:",data);
