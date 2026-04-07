@@ -25,6 +25,18 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
   >([]);
   const [isListening, setIsListening] = useState(false);
   const hasMessages = messages.length > 0;
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("chaitra_settings");
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      setVoiceEnabled(parsed.voice_enabled !== false);
+    } catch {
+      setVoiceEnabled(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!selectedChat?.query && !selectedChat?.response) return;
@@ -95,7 +107,7 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
       const res = await sendQuery(voiceText);
 
       typeText(res?.response || "No response", botIndex);
-      speak(res?.response || "");
+      if (voiceEnabled) speak(res?.response || "");
       onMessageSent?.();
 
     } catch (err) {
@@ -123,7 +135,7 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
       const res = await sendQuery(currentQuery);
 
       typeText(res?.response || "No response", botIndex);
-      speak(res?.response || "");
+      if (voiceEnabled) speak(res?.response || "");
       onMessageSent?.();
 
     } catch (err) {
