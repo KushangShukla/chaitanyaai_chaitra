@@ -17,6 +17,8 @@ import { clearAuthSession, getStoredToken } from "./services/api";
 function App() {
   const [page, setPage] = useState("chat");
   const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [refreshChatsKey, setRefreshChatsKey] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(Boolean(getStoredToken()));
   const [authPage, setAuthPage] = useState<"login" | "signup">("login");
 
@@ -39,8 +41,23 @@ function App() {
       case "insights": return <Insights />;
       case "data": return <Data />;
       case "profile": return <Profile />;
-      case "settings": return <Settings />;
-      default: return <Chat selectedChat={selectedChat} />;
+      case "settings":
+        return (
+          <Settings
+            onLogout={() => {
+              clearAuthSession();
+              setIsAuthenticated(false);
+              setPage("chat");
+            }}
+          />
+        );
+      default:
+        return (
+          <Chat
+            selectedChat={selectedChat}
+            onMessageSent={() => setRefreshChatsKey((v) => v + 1)}
+          />
+        );
     }
   };
 
@@ -58,14 +75,14 @@ function App() {
         <>
       
       {/* 🔹 Floating Sidebar */}
+      <button className="sidebar-toggle glass" onClick={() => setSidebarOpen((v) => !v)}>
+        {sidebarOpen ? "Hide Menu" : "Show Menu"}
+      </button>
       <Sidebar
         setPage={setPage}
         onSelectChat={setSelectedChat}
-        onLogout={() => {
-          clearAuthSession();
-          setIsAuthenticated(false);
-          setPage("chat");
-        }}
+        refreshChatsKey={refreshChatsKey}
+        isCollapsed={!sidebarOpen}
       />
 
       {/* 🔹 Main Content with Animation */}

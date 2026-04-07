@@ -1,9 +1,9 @@
 import ChatBox from "../components/ChatBox";
 
-const Chat = ({ selectedChat }: any) => {
+const Chat = ({ selectedChat, onMessageSent }: any) => {
     return (
         <div style={{padding: "20px" }}>
-            <ChatBox selectedChat={selectedChat} />
+            <ChatBox selectedChat={selectedChat} onMessageSent={onMessageSent} />
         </div>
     );
 };

@@ -1,7 +1,7 @@
 import {useState} from "react";
 import { useEffect } from "react";
 import { getSettings, updateSettings } from "../services/api";
-const Settings=() => {
+const Settings=({ onLogout }: any) => {
     const[voice,setVoice]=useState(true);
     const[theme,setTheme]=useState("dark");
     const [chatMode, setChatMode] = useState("auto");
@@ -35,40 +35,54 @@ const Settings=() => {
         <div className="glass" style={{ maxWidth: "720px", display: "grid", gap: "12px" }}>
             <h2>Settings</h2>
 
-            <label>
-                Voice:
-                <input type="checkbox" checked={voice} onChange={()=>setVoice(!voice)} />
-            </label>
+            <div>
+                <p>Voice</p>
+                <div className="button-group">
+                    <button className={`toggle-btn ${voice ? "selected" : ""}`} onClick={() => setVoice(true)}>On</button>
+                    <button className={`toggle-btn ${!voice ? "selected" : ""}`} onClick={() => setVoice(false)}>Off</button>
+                </div>
+            </div>
 
-            <label>
-                Theme:
-                <select value={theme} onChange={e=>setTheme(e.target.value)}>
-                    <option value="dark">dark</option>
-                    <option value="light">light</option>
-                    <option value="system">system</option>
-                </select>
-            </label>
+            <div>
+                <p>Theme</p>
+                <div className="button-group">
+                    {["dark", "light", "system"].map((opt) => (
+                        <button key={opt} className={`toggle-btn ${theme === opt ? "selected" : ""}`} onClick={() => setTheme(opt)}>
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
-            <label>
-                Chat Mode:
-                <select value={chatMode} onChange={e=>setChatMode(e.target.value)}>
-                    <option value="auto">auto</option>
-                    <option value="rag">rag</option>
-                    <option value="llm">llm</option>
-                </select>
-            </label>
+            <div>
+                <p>Chat Mode</p>
+                <div className="button-group">
+                    {["auto", "rag", "llm"].map((opt) => (
+                        <button key={opt} className={`toggle-btn ${chatMode === opt ? "selected" : ""}`} onClick={() => setChatMode(opt)}>
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
-            <label>
-                Retention:
-                <select value={retention} onChange={e=>setRetention(e.target.value)}>
-                    <option value="30_days">30 days</option>
-                    <option value="90_days">90 days</option>
-                    <option value="forever">forever</option>
-                </select>
-            </label>
+            <div>
+                <p>Retention</p>
+                <div className="button-group">
+                    {[
+                        { key: "30_days", label: "30 days" },
+                        { key: "90_days", label: "90 days" },
+                        { key: "forever", label: "forever" },
+                    ].map((opt) => (
+                        <button key={opt.key} className={`toggle-btn ${retention === opt.key ? "selected" : ""}`} onClick={() => setRetention(opt.key)}>
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
             <div>
                 <button onClick={handleSave}>Save Settings</button>
+                <button style={{ marginLeft: "10px" }} onClick={onLogout}>Logout</button>
                 {status && <span style={{ marginLeft: "10px" }}>{status}</span>}
             </div>
         </div>

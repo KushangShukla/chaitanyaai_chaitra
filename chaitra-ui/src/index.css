@@ -42,26 +42,22 @@ h1, h2, h3 {
 
 /*  BUTTON */
 button {
-  background: #38bdf8;
-  color: #020617;
-  border: none;
-  padding: 10px 16px;
+  background: rgba(56,189,248,0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white;
+  padding: 10px 14px;
   border-radius: 10px;
-  cursor: pointer;
-  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 button:hover {
-  background: #0ea5e9;
+  box-shadow: 0 0 15px rgba(56,189,248,0.5);
+  transform: translateY(-2px);
 }
 
-/*  INPUT */
-input {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  padding: 10px;
-  border-radius: 10px;
-  color: white;
+button:active {
+  transform: scale(0.95);
 }
 
 /*  SCROLLBAR */
@@ -327,4 +323,171 @@ body::after {
   left: var(--x, 50%);
   top: var(--y, 50%);
   transition: all 0.1s linear;
+}
+
+/*  GLOBAL SPACING SYSTEM */
+.section {
+  margin-bottom: 24px;
+}
+
+.card {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.flex {
+  display: flex;
+  gap: 12px;
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-history {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+/* CHAT HISTORY */
+.chat-history {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+/* SEARCH INPUT */
+.sidebar input {
+  padding: 8px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255,255,255,0.05);
+  color: white;
+}
+
+/* AUTH PAGES */
+.auth-card {
+  width: min(520px, 92vw);
+  margin: 0 auto;
+  padding: 28px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  box-shadow: 0 0 28px rgba(56, 189, 248, 0.2);
+}
+
+.auth-card h2 {
+  margin-bottom: 14px;
+}
+
+.auth-input {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(15, 23, 42, 0.7);
+  color: #f8fafc;
+}
+
+.auth-input::placeholder {
+  color: #94a3b8;
+}
+
+.sidebar-collapsed {
+  width: 88px;
+}
+
+.sidebar-collapsed .logo,
+.sidebar-collapsed .new-chat-btn,
+.sidebar-collapsed .menu-item {
+  text-align: center;
+}
+
+.sidebar-toggle {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 30;
+}
+
+.sidebar-search {
+  width: 100% !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(15, 23, 42, 0.6) !important;
+}
+
+.chat-history-item {
+  display: block;
+}
+
+.chat-history-title {
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.chat-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-actions button {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.chat-shell {
+  min-height: 76vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex: 1;
+}
+
+.chat-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.floating-top {
+  margin-top: 12px;
+}
+
+.sticky-bottom {
+  margin-top: auto;
+  position: sticky;
+  bottom: 0;
+}
+
+.chat-main-input {
+  width: 100% !important;
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(15, 23, 42, 0.7);
+  color: #f8fafc;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.toggle-btn {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.toggle-btn.selected {
+  background: rgba(56, 189, 248, 0.25);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.32);
 }

@@ -60,10 +60,14 @@ const Profile = () => {
         </label>
         <label>
           Role
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="business">Business</option>
-            <option value="admin">Admin</option>
-          </select>
+          <div className="button-group">
+            <button className={`toggle-btn ${role === "business" ? "selected" : ""}`} onClick={() => setRole("business")}>
+              Business
+            </button>
+            <button className={`toggle-btn ${role === "admin" ? "selected" : ""}`} onClick={() => setRole("admin")}>
+              Admin
+            </button>
+          </div>
         </label>
 
         <div style={{ marginTop: "8px" }}>

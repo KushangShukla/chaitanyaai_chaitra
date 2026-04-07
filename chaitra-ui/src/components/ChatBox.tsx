@@ -18,12 +18,13 @@ if (typeof window !== "undefined") {
   }
 }
 
-const ChatBox = ({ selectedChat }: any) => {
+const ChatBox = ({ selectedChat, onMessageSent }: any) => {
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState<
     { role: string; text: string }[]
   >([]);
   const [isListening, setIsListening] = useState(false);
+  const hasMessages = messages.length > 0;
 
   useEffect(() => {
     if (!selectedChat?.query && !selectedChat?.response) return;
@@ -95,6 +96,7 @@ const ChatBox = ({ selectedChat }: any) => {
 
       typeText(res?.response || "No response", botIndex);
       speak(res?.response || "");
+      onMessageSent?.();
 
     } catch (err) {
       console.error(err);
@@ -122,6 +124,7 @@ const ChatBox = ({ selectedChat }: any) => {
 
       typeText(res?.response || "No response", botIndex);
       speak(res?.response || "");
+      onMessageSent?.();
 
     } catch (err) {
       console.error(err);
@@ -129,14 +132,15 @@ const ChatBox = ({ selectedChat }: any) => {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div className="chat-shell">
 
       {/*  CHAT AREA */}
       <div
+        className="chat-messages"
         style={{
           height: "500px",
           overflowY: "auto",
-          marginBottom: "20px",
+          marginBottom: "20px"
         }}
       >
         {messages.map((msg, i) => (
@@ -178,8 +182,9 @@ const ChatBox = ({ selectedChat }: any) => {
       )}
 
       {/* INPUT AREA */}
-      <div>
+      <div className={`chat-input-wrap ${hasMessages ? "sticky-bottom" : "floating-top"} glass`}>
         <input
+          className="chat-main-input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Ask CHAITRA..."

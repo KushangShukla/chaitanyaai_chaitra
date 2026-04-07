@@ -25,17 +25,19 @@ const Signup = ({ onSuccess, onSwitch }: any) => {
   };
 
   return (
-    <div className="glass">
+    <div className="glass glow auth-card">
       <h2>Signup</h2>
 
-      <input placeholder="Full name" onChange={e=>setFullName(e.target.value)} />
-      <input placeholder="Company" onChange={e=>setCompany(e.target.value)} />
-      <input onChange={e=>setEmail(e.target.value)} />
-      <input type="password" onChange={e=>setPassword(e.target.value)} />
+      <input className="auth-input" placeholder="Full name" onChange={e=>setFullName(e.target.value)} />
+      <input className="auth-input" placeholder="Company" onChange={e=>setCompany(e.target.value)} />
+      <input className="auth-input" type="email" placeholder="Email address" onChange={e=>setEmail(e.target.value)} />
+      <input className="auth-input" type="password" placeholder="Password" onChange={e=>setPassword(e.target.value)} />
       {error && <p style={{ color: "#f87171", marginTop: "8px" }}>{error}</p>}
 
-      <button onClick={handleSignup}>Signup</button>
-      <button onClick={onSwitch} style={{ marginLeft: "8px" }}>Already have account</button>
+      <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+        <button onClick={handleSignup}>Signup</button>
+        <button onClick={onSwitch}>Already have account</button>
+      </div>
     </div>
   );
 };

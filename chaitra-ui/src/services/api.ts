@@ -56,6 +56,16 @@ export const getChats = async (userId = "default_user") => {
   return data;
 };
 
+export const pinChat = async (chatId: number, pinned: boolean) => {
+  const { data } = await API.put(`/chats/${chatId}/pin`, { pinned });
+  return data;
+};
+
+export const deleteChat = async (chatId: number) => {
+  const { data } = await API.delete(`/chats/${chatId}`);
+  return data;
+};
+
 export const signup = async (payload: { email: string; password: string; full_name?: string; company?: string }) => {
   const { data } = await API.post("/auth/signup", payload);
   return data;

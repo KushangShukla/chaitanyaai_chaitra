@@ -18,15 +18,17 @@ const Login = ({ onSuccess, onSwitch }: any) => {
     };
 
     return (
-        <div className="glass">
+        <div className="glass glow auth-card">
             <h2>Login</h2>
 
-            <input placeholder="Email" onChange={e=>setEmail(e.target.value)}/>
-            <input placeholder="Password" type="password" onChange={e=>setPassword(e.target.value)}/>
+            <input className="auth-input" type="email" placeholder="Email address" onChange={e=>setEmail(e.target.value)}/>
+            <input className="auth-input" placeholder="Password" type="password" onChange={e=>setPassword(e.target.value)}/>
             {error && <p style={{ color: "#f87171", marginTop: "8px" }}>{error}</p>}
 
-            <button onClick={handleLogin}>Login</button>
-            <button onClick={onSwitch} style={{ marginLeft: "8px" }}>Create account</button>
+            <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+                <button onClick={handleLogin}>Login</button>
+                <button onClick={onSwitch}>Create account</button>
+            </div>
         </div>
     );
 };

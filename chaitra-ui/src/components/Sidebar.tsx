@@ -1,21 +1,24 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { getChats, getStoredUser } from "../services/api";
+import { deleteChat, getChats, getStoredUser, pinChat } from "../services/api";
 
-type ChatItem = { query: string; response: string };
+type ChatItem = { id: number; query: string; response: string; pinned?: boolean };
 
-const Sidebar = ({ setPage, onSelectChat, onLogout }: any) => {
+const Sidebar = ({ setPage, onSelectChat, refreshChatsKey, isCollapsed }: any) => {
   const [active, setActive] = useState("chat");
   const [chats, setChats] = useState<ChatItem[]>([]);
   const [search, setSearch] = useState("");
 
-  //  FETCH CHAT HISTORY
-  useEffect(() => {
+  const loadChats = () => {
     const user = getStoredUser();
     getChats(user?.id || "default_user")
       .then((data) => setChats(data?.chats || []))
       .catch(() => setChats([]));
-  }, []);
+  };
+
+  useEffect(() => {
+    loadChats();
+  }, [refreshChatsKey]);
 
   //  FILTER CHATS
   const filteredChats = chats.filter((c) => {
@@ -26,15 +29,15 @@ const Sidebar = ({ setPage, onSelectChat, onLogout }: any) => {
   });
 
   const menuTop = [
-    { name: "Dashboard", key: "dashboard", icon: "📊" },
-    { name: "Predictions", key: "predictions", icon: "📈" },
-    { name: "Insights", key: "insights", icon: "🧠" },
-    { name: "Data", key: "data", icon: "📂" }
+    { name: "Dashboard", key: "dashboard" },
+    { name: "Predictions", key: "predictions" },
+    { name: "Insights", key: "insights" },
+    { name: "Data", key: "data" }
   ];
 
   const menuBottom = [
-    { name: "Profile", key: "profile", icon: "👤" },
-    { name: "Settings", key: "settings", icon: "⚙️" }
+    { name: "Profile", key: "profile" },
+    { name: "Settings", key: "settings" }
   ];
 
   const handleClick = (key: string) => {
@@ -43,7 +46,7 @@ const Sidebar = ({ setPage, onSelectChat, onLogout }: any) => {
   };
 
   return (
-    <div className="sidebar glass">
+    <div className={`sidebar glass ${isCollapsed ? "sidebar-collapsed" : ""}`}>
 
       {/*  LOGO */}
       <motion.div
@@ -61,33 +64,58 @@ const Sidebar = ({ setPage, onSelectChat, onLogout }: any) => {
         className="new-chat-btn glow"
         onClick={() => handleClick("chat")}
       >
-        ➕ New Chat
+        New Chat
       </motion.div>
 
       {/*  SEARCH */}
-      <input
-        placeholder="Search chats..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={{ marginBottom: "10px", width: "100%" }}
-      />
+      {!isCollapsed && (
+        <input
+          className="sidebar-search glass"
+          placeholder="Search chats..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ marginBottom: "10px", width: "100%" }}
+        />
+      )}
 
       {/*  CHAT HISTORY */}
-      <div className="chat-history">
+      {!isCollapsed && <div className="chat-history">
         {filteredChats.map((chat, i) => (
           <motion.div
-            key={i}
+            key={chat.id || i}
             whileHover={{ scale: 1.03 }}
-            className="menu-item glow"
-            onClick={() => {
-              onSelectChat?.(chat);
-              handleClick("chat");
-            }}
+            className="menu-item glow chat-history-item"
           >
-            {(chat.query || "Untitled chat").slice(0, 25)}...
+            <div
+              className="chat-history-title"
+              onClick={() => {
+                onSelectChat?.(chat);
+                handleClick("chat");
+              }}
+            >
+              {(chat.query || "Untitled chat").slice(0, 35)}
+            </div>
+            <div className="chat-actions">
+              <button
+                onClick={async () => {
+                  await pinChat(chat.id, !chat.pinned);
+                  loadChats();
+                }}
+              >
+                {chat.pinned ? "Unpin" : "Pin"}
+              </button>
+              <button
+                onClick={async () => {
+                  await deleteChat(chat.id);
+                  loadChats();
+                }}
+              >
+                Delete
+              </button>
+            </div>
           </motion.div>
         ))}
-      </div>
+      </div>}
 
       {/*  MENU */}
       <div className="menu">
@@ -101,8 +129,7 @@ const Sidebar = ({ setPage, onSelectChat, onLogout }: any) => {
               active === item.key ? "active" : ""
             }`}
           >
-            <span>{item.icon}</span>
-            <span style={{ marginLeft: "10px" }}>{item.name}</span>
+            <span>{item.name}</span>
           </motion.div>
         ))}
       </div>
@@ -119,19 +146,9 @@ const Sidebar = ({ setPage, onSelectChat, onLogout }: any) => {
               active === item.key ? "active" : ""
             }`}
           >
-            <span>{item.icon}</span>
-            <span style={{ marginLeft: "10px" }}>{item.name}</span>
+            <span>{item.name}</span>
           </motion.div>
         ))}
-        <motion.div
-          whileHover={{ scale: 1.05, x: 5 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onLogout}
-          className="menu-item glow"
-        >
-          <span>🚪</span>
-          <span style={{ marginLeft: "10px" }}>Logout</span>
-        </motion.div>
       </div>
 
     </div>

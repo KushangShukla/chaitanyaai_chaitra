@@ -84,12 +84,21 @@ def bootstrap_auth_tables():
     conn.close()
 
 
+def bootstrap_chat_tables():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE")
+    conn.commit()
+    conn.close()
+
+
 # =========================
 #  ROUTES
 # =========================
 app.include_router(query_router)
 app.include_router(predict_router)
 bootstrap_auth_tables()
+bootstrap_chat_tables()
 
 
 # =========================
@@ -99,8 +108,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174"
     ],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -454,18 +466,50 @@ def get_user_chats(user_id: str):
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT query, response 
+            SELECT id, query, response, pinned
             FROM chat_history
             WHERE user_id = %s
-            ORDER BY id DESC
-            LIMIT 20
+            ORDER BY pinned DESC, id DESC
+            LIMIT 100
         """, (user_id,))
 
         chats = cursor.fetchall()
 
         conn.close()
 
-        return {"chats": [{"query": q or "", "response": r or ""} for q, r in chats]}
+        return {
+            "chats": [
+                {"id": c[0], "query": c[1] or "", "response": c[2] or "", "pinned": bool(c[3])}
+                for c in chats
+            ]
+        }
 
     except Exception as e:
         return {"error": str(e)}
+
+
+@app.put("/chats/{chat_id}/pin")
+def toggle_pin_chat(chat_id: int, body: dict):
+    try:
+        pinned = bool(body.get("pinned", False))
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE chat_history SET pinned = %s WHERE id = %s", (pinned, chat_id))
+        conn.commit()
+        conn.close()
+        return {"status": "success", "chat_id": chat_id, "pinned": pinned}
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
+
+
+@app.delete("/chats/{chat_id}")
+def delete_chat(chat_id: int):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM chat_history WHERE id = %s", (chat_id,))
+        conn.commit()
+        conn.close()
+        return {"status": "success", "chat_id": chat_id}
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
