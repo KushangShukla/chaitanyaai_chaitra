@@ -64,7 +64,7 @@ function App() {
   return (
     <div className="app-container">
       {!isAuthenticated ? (
-        <main className="main-content center">
+        <main className="auth-main">
           {authPage === "login" ? (
             <Login onSuccess={() => setIsAuthenticated(true)} onSwitch={() => setAuthPage("signup")} />
           ) : (
@@ -75,15 +75,20 @@ function App() {
         <>
       
       {/* 🔹 Floating Sidebar */}
-      <button className="sidebar-toggle glass" onClick={() => setSidebarOpen((v) => !v)}>
+      <button
+        className={`sidebar-toggle glass ${sidebarOpen ? "menu-open" : "menu-closed"}`}
+        onClick={() => setSidebarOpen((v) => !v)}
+      >
         {sidebarOpen ? "Hide Menu" : "Show Menu"}
       </button>
-      <Sidebar
-        setPage={setPage}
-        onSelectChat={setSelectedChat}
-        refreshChatsKey={refreshChatsKey}
-        isCollapsed={!sidebarOpen}
-      />
+      {sidebarOpen && (
+        <Sidebar
+          setPage={setPage}
+          onSelectChat={setSelectedChat}
+          refreshChatsKey={refreshChatsKey}
+          isCollapsed={false}
+        />
+      )}
 
       {/* 🔹 Main Content with Animation */}
       <main className="main-content">

@@ -80,6 +80,7 @@ const Sidebar = ({ setPage, onSelectChat, refreshChatsKey, isCollapsed }: any) =
 
       {/*  CHAT HISTORY */}
       {!isCollapsed && <div className="chat-history">
+        {filteredChats.length === 0 && <p style={{ opacity: 0.75 }}>No chats found</p>}
         {filteredChats.map((chat, i) => (
           <motion.div
             key={chat.id || i}

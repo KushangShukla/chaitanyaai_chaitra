@@ -346,23 +346,35 @@ def get_dashboard():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Total queries
+        # Primary source: generated model logs
         cursor.execute("SELECT COUNT(*) FROM query_logs")
-        total_queries = cursor.fetchone()[0]
+        total_queries = cursor.fetchone()[0] or 0
 
-        # Avg prediction
         cursor.execute("SELECT AVG(prediction) FROM query_logs WHERE prediction IS NOT NULL")
         avg_prediction = cursor.fetchone()[0]
 
-        # Recent predictions (for chart)
         cursor.execute("""
-            SELECT prediction 
-            FROM query_logs 
-            WHERE prediction IS NOT NULL 
-            ORDER BY id DESC 
+            SELECT prediction
+            FROM query_logs
+            WHERE prediction IS NOT NULL
+            ORDER BY id DESC
             LIMIT 10
         """)
         predictions = cursor.fetchall()
+
+        # Fallback source: walmart dataset when no model logs yet
+        if not predictions:
+            cursor.execute("SELECT COUNT(*) FROM walmart_sales")
+            total_queries = cursor.fetchone()[0] or 0
+            cursor.execute("SELECT AVG(weekly_sales) FROM walmart_sales")
+            avg_prediction = cursor.fetchone()[0]
+            cursor.execute("""
+                SELECT weekly_sales
+                FROM walmart_sales
+                ORDER BY date DESC
+                LIMIT 10
+            """)
+            predictions = cursor.fetchall()
 
         conn.close()
 
@@ -392,6 +404,20 @@ def get_predictions():
             """
         )
         rows = cursor.fetchall()
+
+        if not rows:
+            cursor.execute(
+                """
+                SELECT
+                    ROW_NUMBER() OVER (ORDER BY date DESC) AS id,
+                    weekly_sales AS prediction,
+                    CONCAT('Store ', store, ' Week ', week) AS query
+                FROM walmart_sales
+                ORDER BY date DESC
+                LIMIT 20
+                """
+            )
+            rows = cursor.fetchall()
         conn.close()
 
         return {
@@ -426,6 +452,15 @@ def get_insights():
         )
         total_pred, avg_pred, max_pred, min_pred = cursor.fetchone()
 
+        if not total_pred:
+            cursor.execute(
+                """
+                SELECT COUNT(*), AVG(weekly_sales), MAX(weekly_sales), MIN(weekly_sales)
+                FROM walmart_sales
+                """
+            )
+            total_pred, avg_pred, max_pred, min_pred = cursor.fetchone()
+
         cursor.execute(
             """
             SELECT query, response
@@ -438,10 +473,10 @@ def get_insights():
         conn.close()
 
         insights = [
-            f"Total prediction records: {int(total_pred or 0)}",
-            f"Average predicted sales: {round(float(avg_pred), 2) if avg_pred is not None else 0}",
-            f"Highest predicted sales: {round(float(max_pred), 2) if max_pred is not None else 0}",
-            f"Lowest predicted sales: {round(float(min_pred), 2) if min_pred is not None else 0}",
+            f"Total records considered: {int(total_pred or 0)}",
+            f"Average sales value: {round(float(avg_pred), 2) if avg_pred is not None else 0}",
+            f"Highest sales value: {round(float(max_pred), 2) if max_pred is not None else 0}",
+            f"Lowest sales value: {round(float(min_pred), 2) if min_pred is not None else 0}",
         ]
 
         return {

@@ -1,6 +1,13 @@
 import {useState} from "react";
 import { useEffect } from "react";
 import { getSettings, updateSettings } from "../services/api";
+
+const applyTheme = (nextTheme: string) => {
+    document.body.classList.remove("theme-light", "theme-dark");
+    if (nextTheme === "light") document.body.classList.add("theme-light");
+    if (nextTheme === "dark") document.body.classList.add("theme-dark");
+};
+
 const Settings=({ onLogout }: any) => {
     const[voice,setVoice]=useState(true);
     const[theme,setTheme]=useState("dark");
@@ -17,9 +24,15 @@ const Settings=({ onLogout }: any) => {
                 setTheme(s.theme || "dark");
                 setChatMode(s.chat_mode || "auto");
                 setRetention(s.retention || "90_days");
+                applyTheme(s.theme || "dark");
+                localStorage.setItem("chaitra_settings", JSON.stringify(s));
             })
             .catch(() => setStatus("Could not load settings."));
     }, []);
+
+    useEffect(() => {
+        applyTheme(theme);
+    }, [theme]);
 
     const handleSave = async () => {
         const res = await updateSettings({
@@ -28,6 +41,10 @@ const Settings=({ onLogout }: any) => {
             chat_mode: chatMode,
             retention,
         });
+        localStorage.setItem(
+            "chaitra_settings",
+            JSON.stringify({ theme, voice_enabled: voice, chat_mode: chatMode, retention })
+        );
         setStatus(res?.status === "success" ? "Settings saved." : (res?.error || "Save failed."));
     };
 

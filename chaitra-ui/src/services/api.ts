@@ -28,10 +28,18 @@ API.interceptors.request.use((config) => {
 
 export const sendQuery = async (query: string) => {
   const currentUser = getStoredUser();
+  const rawSettings = localStorage.getItem("chaitra_settings");
+  let chatMode = "auto";
+  try {
+    chatMode = rawSettings ? JSON.parse(rawSettings)?.chat_mode || "auto" : "auto";
+  } catch {
+    chatMode = "auto";
+  }
   const { data } = await API.post("/query", {
     query,
     user_id: currentUser?.id || "default_user",
     fast_mode: true,
+    chat_mode: chatMode,
   });
   return data;
 };

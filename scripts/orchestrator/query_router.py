@@ -98,7 +98,7 @@ External factors like economic shifts may impact prediction accuracy.
     # =========================
     #  MAIN ROUTER
     # =========================
-    def route(self, query, user_id="default_user", role="user"):
+    def route(self, query, user_id="default_user", role="user", mode_override=None):
 
         log(f"Query: {query}")
         print("Query Received:", query)
@@ -107,6 +107,12 @@ External factors like economic shifts may impact prediction accuracy.
 
         try:
             intent = self.detect_intent(query)
+            if mode_override == "rag":
+                intent = "rag_explanation"
+            elif mode_override == "llm":
+                intent = "general_llm"
+            elif mode_override == "ml":
+                intent = "ml_prediction"
 
             # Memory (light)
             history = self.memory.get_recent_history(user_id)
