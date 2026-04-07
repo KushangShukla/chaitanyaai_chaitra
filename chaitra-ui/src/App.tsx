@@ -10,9 +10,15 @@ import Insights from "./pages/Insights";
 import Data from "./pages/Data";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import { clearAuthSession, getStoredToken } from "./services/api";
 
 function App() {
   const [page, setPage] = useState("chat");
+  const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(getStoredToken()));
+  const [authPage, setAuthPage] = useState<"login" | "signup">("login");
 
   //  Cursor Glow Tracking (BACKGROUND EFFECT)
   useEffect(() => {
@@ -34,15 +40,33 @@ function App() {
       case "data": return <Data />;
       case "profile": return <Profile />;
       case "settings": return <Settings />;
-      default: return <Chat />;
+      default: return <Chat selectedChat={selectedChat} />;
     }
   };
 
   return (
     <div className="app-container">
+      {!isAuthenticated ? (
+        <main className="main-content center">
+          {authPage === "login" ? (
+            <Login onSuccess={() => setIsAuthenticated(true)} onSwitch={() => setAuthPage("signup")} />
+          ) : (
+            <Signup onSuccess={() => setIsAuthenticated(true)} onSwitch={() => setAuthPage("login")} />
+          )}
+        </main>
+      ) : (
+        <>
       
       {/* 🔹 Floating Sidebar */}
-      <Sidebar setPage={setPage} />
+      <Sidebar
+        setPage={setPage}
+        onSelectChat={setSelectedChat}
+        onLogout={() => {
+          clearAuthSession();
+          setIsAuthenticated(false);
+          setPage("chat");
+        }}
+      />
 
       {/* 🔹 Main Content with Animation */}
       <main className="main-content">
@@ -58,6 +82,8 @@ function App() {
           </motion.div>
         </AnimatePresence>
       </main>
+      </>
+      )}
 
     </div>
   );

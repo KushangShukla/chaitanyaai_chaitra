@@ -15,6 +15,7 @@ class QueryLogger:
         self.cursor=self.conn.cursor()
 
     def log(self,data:dict):
+        model_used = data.get("model_used", data.get("model", "unknown_model"))
         self.cursor.execute(
             """
             INSERT INTO query_logs
@@ -26,7 +27,7 @@ class QueryLogger:
                 data["query"],
                 data["input_type"],
                 data["mode"],
-                data["model_used"],
+                model_used,
                 json.dumps(data["features"]),
                 float(data["prediction"]),
                 data["response"],

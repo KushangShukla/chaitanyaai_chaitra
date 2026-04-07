@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { sendQuery } from "../services/api";
 import { speak } from "../services/voice";
 import { motion } from "framer-motion";
@@ -18,12 +18,21 @@ if (typeof window !== "undefined") {
   }
 }
 
-const ChatBox = () => {
+const ChatBox = ({ selectedChat }: any) => {
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState<
     { role: string; text: string }[]
   >([]);
   const [isListening, setIsListening] = useState(false);
+
+  useEffect(() => {
+    if (!selectedChat?.query && !selectedChat?.response) return;
+
+    setMessages([
+      { role: "user", text: selectedChat.query || "" },
+      { role: "bot", text: selectedChat.response || "" },
+    ]);
+  }, [selectedChat]);
 
   //  AI Typing Effect
   const typeText = (text: string, index: number) => {
@@ -85,7 +94,7 @@ const ChatBox = () => {
       const res = await sendQuery(voiceText);
 
       typeText(res?.response || "No response", botIndex);
-      speak(res.response);
+      speak(res?.response || "");
 
     } catch (err) {
       console.error(err);
@@ -111,8 +120,8 @@ const ChatBox = () => {
     try {
       const res = await sendQuery(currentQuery);
 
-      typeText(res.response, botIndex);
-      speak(res.response);
+      typeText(res?.response || "No response", botIndex);
+      speak(res?.response || "");
 
     } catch (err) {
       console.error(err);

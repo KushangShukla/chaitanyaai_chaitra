@@ -1,9 +1,9 @@
 import ChatBox from "../components/ChatBox";
 
-const Chat=() => {
+const Chat = ({ selectedChat }: any) => {
     return (
         <div style={{padding: "20px" }}>
-            <ChatBox />
+            <ChatBox selectedChat={selectedChat} />
         </div>
     );
 };
