@@ -81,14 +81,16 @@ function App() {
       >
         {sidebarOpen ? "Hide Menu" : "Show Menu"}
       </button>
-      {sidebarOpen && (
-        <Sidebar
-          setPage={setPage}
-          onSelectChat={setSelectedChat}
-          refreshChatsKey={refreshChatsKey}
-          isCollapsed={false}
-        />
-      )}
+      <div className={`sidebar-shell ${sidebarOpen ? "open" : "closed"}`}>
+        {sidebarOpen && (
+          <Sidebar
+            setPage={setPage}
+            onSelectChat={setSelectedChat}
+            refreshChatsKey={refreshChatsKey}
+            isCollapsed={false}
+          />
+        )}
+      </div>
 
       {/* 🔹 Main Content with Animation */}
       <main className="main-content">

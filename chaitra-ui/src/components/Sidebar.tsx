@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { deleteChat, getChats, getStoredUser, pinChat } from "../services/api";
+import { deleteChat, getChats, getStoredUser, me, pinChat } from "../services/api";
 
 type ChatItem = { id: number; query: string; response: string; pinned?: boolean };
 
@@ -9,11 +9,25 @@ const Sidebar = ({ setPage, onSelectChat, refreshChatsKey, isCollapsed }: any) =
   const [chats, setChats] = useState<ChatItem[]>([]);
   const [search, setSearch] = useState("");
 
-  const loadChats = () => {
-    const user = getStoredUser();
-    getChats(user?.id || "default_user")
-      .then((data) => setChats(data?.chats || []))
-      .catch(() => setChats([]));
+  const loadChats = async () => {
+    try {
+      let user = getStoredUser();
+      let userId = user?.id;
+
+      if (!userId) {
+        const meRes = await me();
+        if (meRes?.status === "success" && meRes?.user?.id) {
+          user = meRes.user;
+          userId = meRes.user.id;
+          localStorage.setItem("chaitra_user", JSON.stringify(meRes.user));
+        }
+      }
+
+      const data = await getChats(userId || "default_user");
+      setChats(data?.chats || []);
+    } catch {
+      setChats([]);
+    }
   };
 
   useEffect(() => {

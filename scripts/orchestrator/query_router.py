@@ -15,6 +15,7 @@ from scripts.ml.automl_trainer import AutoMLTrainer
 from scripts.utils.querry_logger import QueryLogger
 
 import time
+import re
 
 
 class QueryRouter:
@@ -128,9 +129,9 @@ External factors like economic shifts may impact prediction accuracy.
                 rag_context = retrieve_context(query)[:800]
 
                 prompt = f"""
-You are CHAITRA, an AI business analyst.
-
-Use context to give insights.
+You are CHAITRA, a practical business analyst assistant.
+Use the context and answer the question in plain text.
+Keep the answer concise, factual, and avoid bullet emojis.
 
 Context:
 {rag_context}
@@ -138,16 +139,7 @@ Context:
 Question:
 {query}
 
-Answer in format:
-
-📊 Key Insight:
-...
-
-📈 Recommendation:
-...
-
-⚠️ Risk:
-...
+Answer:
 """
 
                 response = self.llm.generate(prompt)
@@ -155,23 +147,14 @@ Answer in format:
             # ================= LLM =================
             else:
                 prompt = f"""
-You are CHAITRA, an AI business assistant.
-
-Answer clearly in 3–5 lines.
+You are CHAITRA, a helpful assistant.
+Answer clearly in plain text using 2-4 short sentences.
+Do not use templates, emojis, or repeated labels.
 
 Question:
 {query}
 
 Answer:
-
-📊 Key Insight:
-...
-
-📈 Recommendation:
-...
-
-⚠️ Risk:
-...
 """
 
                 response = self.llm.generate(prompt)
@@ -183,6 +166,8 @@ Answer:
         # Fallback
         if not response or len(response.strip()) < 5:
             response = "I couldn't generate a proper answer. Try again."
+
+        response = self._sanitize_response(response)
 
         # Clean unwanted outputs
         if any(x in response for x in ["import", "def", "class"]):
@@ -196,6 +181,41 @@ Answer:
         self.vector_memory.add_memory(query, response)
 
         return response
+
+    def _sanitize_response(self, text):
+        cleaned = (text or "").strip()
+        if not cleaned:
+            return cleaned
+
+        # Collapse excessive whitespace
+        cleaned = re.sub(r"\s+", " ", cleaned)
+
+        # Remove repeated template artifacts from model drift
+        artifacts = [
+            "🔍 Question:",
+            "💡 Solution:",
+            "📖 Example:",
+            "📝 Answer:",
+        ]
+        for token in artifacts:
+            if cleaned.count(token) > 1:
+                first_idx = cleaned.find(token)
+                if first_idx != -1:
+                    # keep first section only for this repeated token pattern
+                    second_idx = cleaned.find(token, first_idx + len(token))
+                    if second_idx != -1:
+                        cleaned = cleaned[:second_idx].strip()
+
+        # Hard cap overly long noisy generations
+        if len(cleaned) > 900:
+            cleaned = cleaned[:900].rstrip() + "..."
+
+        # If output is mostly template noise, force clean fallback
+        noise_tokens = ["💡", "📖", "📝", "🔍", "Best Practice", "Case Study", "Next Steps"]
+        if sum(1 for t in noise_tokens if t in cleaned) >= 3:
+            return "I can answer this, but the model output was noisy. Please ask again in one short sentence."
+
+        return cleaned
 
     # =========================
     #  INTENT DETECTION

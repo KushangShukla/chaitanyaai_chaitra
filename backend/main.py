@@ -15,6 +15,7 @@ app = FastAPI(title="CHAITRA AI API")
 JWT_SECRET = os.getenv("JWT_SECRET", "chaitra_dev_secret_change_me")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
+SALES_DATA_TABLE = "walmart_sales_ml_ready_final"
 
 
 # =========================
@@ -90,6 +91,18 @@ def bootstrap_chat_tables():
     cursor.execute("ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE")
     conn.commit()
     conn.close()
+
+
+def get_table_columns(cursor, table_name: str):
+    cursor.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = %s
+        """,
+        (table_name,),
+    )
+    return {row[0] for row in cursor.fetchall()}
 
 
 # =========================
@@ -364,16 +377,28 @@ def get_dashboard():
 
         # Fallback source: walmart dataset when no model logs yet
         if not predictions:
-            cursor.execute("SELECT COUNT(*) FROM walmart_sales")
+            cols = get_table_columns(cursor, SALES_DATA_TABLE)
+            cursor.execute(f"SELECT COUNT(*) FROM {SALES_DATA_TABLE}")
             total_queries = cursor.fetchone()[0] or 0
-            cursor.execute("SELECT AVG(weekly_sales) FROM walmart_sales")
+            cursor.execute(f"SELECT AVG(weekly_sales) FROM {SALES_DATA_TABLE}")
             avg_prediction = cursor.fetchone()[0]
-            cursor.execute("""
-                SELECT weekly_sales
-                FROM walmart_sales
-                ORDER BY date DESC
-                LIMIT 10
-            """)
+            if "date" in cols:
+                cursor.execute(
+                    """
+                    SELECT weekly_sales
+                    FROM {table}
+                    ORDER BY date DESC
+                    LIMIT 10
+                    """.format(table=SALES_DATA_TABLE)
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT weekly_sales
+                    FROM {table}
+                    LIMIT 10
+                    """.format(table=SALES_DATA_TABLE)
+                )
             predictions = cursor.fetchall()
 
         conn.close()
@@ -406,17 +431,27 @@ def get_predictions():
         rows = cursor.fetchall()
 
         if not rows:
+            cols = get_table_columns(cursor, SALES_DATA_TABLE)
+            has_store = "store" in cols
+            has_week = "week" in cols
+            has_date = "date" in cols
+            label_expr = (
+                "CONCAT('Store ', store, ' Week ', week)"
+                if has_store and has_week
+                else "'Dataset row'"
+            )
+            order_expr = "ORDER BY date DESC" if has_date else ""
             cursor.execute(
                 """
                 SELECT
-                    ROW_NUMBER() OVER (ORDER BY date DESC) AS id,
+                    ROW_NUMBER() OVER () AS id,
                     weekly_sales AS prediction,
-                    CONCAT('Store ', store, ' Week ', week) AS query
-                FROM walmart_sales
-                ORDER BY date DESC
+                    {label} AS query
+                FROM {table}
+                {order_clause}
                 LIMIT 20
                 """
-            )
+            .format(table=SALES_DATA_TABLE, label=label_expr, order_clause=order_expr))
             rows = cursor.fetchall()
         conn.close()
 
@@ -456,8 +491,9 @@ def get_insights():
             cursor.execute(
                 """
                 SELECT COUNT(*), AVG(weekly_sales), MAX(weekly_sales), MIN(weekly_sales)
-                FROM walmart_sales
+                FROM {table}
                 """
+                .format(table=SALES_DATA_TABLE)
             )
             total_pred, avg_pred, max_pred, min_pred = cursor.fetchone()
 

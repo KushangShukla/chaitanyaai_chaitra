@@ -428,6 +428,16 @@ body::after {
   left: 14px;
 }
 
+.sidebar-shell {
+  width: 260px;
+  min-width: 260px;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-shell.closed {
+  opacity: 0;
+}
+
 .sidebar-search {
   width: 100% !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;

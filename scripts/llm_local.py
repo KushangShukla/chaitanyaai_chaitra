@@ -1,7 +1,8 @@
 import torch
 from transformers import AutoTokenizer,AutoModelForCausalLM
+import os
 
-MODEL_NAME="microsoft/phi-2"
+MODEL_NAME = os.getenv("LLM_MODEL_NAME", "microsoft/phi-2")
 
 device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -9,27 +10,29 @@ print("Loading tokenizer...")
 tokenizer=AutoTokenizer.from_pretrained(MODEL_NAME)
 
 print("Loading model...")
-model=AutoModelForCausalLM.from_pretrained(
-    MODEL_NAME,
-    torch_dtype=torch.float16,
-    device_map="auto"
-)
+model_kwargs = {
+    "torch_dtype": torch.float16 if torch.cuda.is_available() else torch.float32
+}
+if torch.cuda.is_available():
+    model_kwargs["device_map"] = "auto"
+model=AutoModelForCausalLM.from_pretrained(MODEL_NAME, **model_kwargs)
 
 model.eval()
 
 print("Model loaded successfully.")
 
-def generate_response(prompt,max_new_tokens=200):
+def generate_response(prompt,max_new_tokens=96):
 
-    inputs=tokenizer(prompt,return_tensors="pt").to(device)
+    inputs=tokenizer(prompt,return_tensors="pt", truncation=True, max_length=1024).to(device)
 
-    with torch.no_grad():
+    with torch.inference_mode():
         outputs=model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
-            temperature=0.7,
-            top_p=0.9,
-            do_sample=True
+            do_sample=False,
+            repetition_penalty=1.12,
+            no_repeat_ngram_size=3,
+            use_cache=True
         )
     
     response=tokenizer.decode(outputs[0], skip_special_tokens=True)
