@@ -1,3 +1,4 @@
+from backend.routes import query
 from scripts.llm.llm_engine import LLMEngine
 from scripts.rag.retrieval import retrieve_context
 from scripts.memory.vector_memory import VectorMemory
@@ -62,7 +63,7 @@ class QueryRouter:
             raw_features = self.feature_extractor.extract(query)
             print("RAW FEATURES:", raw_features)
 
-            mapped_features = self.schema_mapper.map_features(raw_features)
+            mapped_features=self.enrich_features_from_db(mapped_features) 
             print("MAPPED FEATURES:", mapped_features)
 
             # Safety
@@ -146,6 +147,9 @@ External factors like economic shifts may impact prediction accuracy.
 
             if "sales" in query.lower() and "predict" not in query.lower():
                 return self.run_data_lookup(query)
+            
+            if self.is_sql_query(query):
+                return "⚠️ Direct SQL queries are not allowed. Please ask in natural language."
 
             # ================= ML =================
             if intent == "ml_prediction":
@@ -244,6 +248,60 @@ Answer:
             return "I can answer this, but the model output was noisy. Please ask again in one short sentence."
 
         return cleaned
+    
+    def enrich_features_from_db(self, mapped_features):
+
+        try:
+            conn=psycopg2.connect(
+                dbname="chaitra_db",
+                user="postgres", 
+                password="root64",
+                host="localhost",
+                port="5432"
+            )
+            
+            cursor=conn.cursor()
+
+            store=int(mapped_features.get("store", 1))
+
+            dept=int(mapped_features.get("department", 1))
+
+            # Fetch REAL contextual features from DB based on store and department
+            cursor.execute(
+                """
+                SELECT store_sales_ratio, dept_sales_ratio, dept_avg_sales, dept_median_sales,
+                store_median_sales, store_avg_sales
+                FROM walmart_sales_refined
+                WHERE store = %s AND department = %s
+                LIMIT 1
+                """,
+                (store, dept)
+            )
+            row=cursor.fetchone()
+
+            conn.close()
+
+            if row:
+                keys=[
+                    "sales_lag_1",
+                    "sales_lag_2",
+                    "isholiday",
+                    "store_sales_ratio",
+                    "dept_sales_ratio",
+                    "dept_avg_sales",
+                    "dept_median_sales",
+                    "store_median_sales",
+                    "store_avg_sales"   
+                ]
+                for i, key in enumerate(keys):
+                    mapped_features[key]=float(row[i])
+
+                    print("ENRICHED FEATURES:",mapped_features)
+
+        except Exception as e:
+            print("DB ENRICHMENT ERROR:", e)    
+        return mapped_features
+             
 
     def get_table_schema(self, table_name="walmart_sales_refined"):
 
@@ -291,7 +349,7 @@ Answer:
                 return v
         return None
     
-    def detect_opertion(self,query):
+    def detect_operation(self,query):
         
         query=query.lower()
 
@@ -315,7 +373,7 @@ Answer:
     def build_sql(self,query):
         
         column=self.map_column(query)
-        operation=self.detect_opertion(query)
+        operation=self.detect_operation(query)
 
         if not column:
             return None, "Could not identify a valid column in the query."
@@ -337,6 +395,16 @@ Answer:
         else:
             sql=f"SELECT {column} FROM {table} LIMIT 10;"
         return sql, None
+    
+    def is_sql_query(self, query):
+
+        sql_keywords = [
+        "select", "insert", "update", "delete",
+        "drop", "alter", "truncate"
+    ]
+        q = query.lower()
+
+        return any(word in q for word in sql_keywords)
     
     def execute_sql(self,sql):
 

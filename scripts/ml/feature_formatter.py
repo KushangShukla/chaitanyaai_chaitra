@@ -27,24 +27,21 @@ class FeatureFormatter:
             "prev_month_sales": 12000.0
         }
 
-    def format(self, mapped_features):
+    def format(self, mapped_features,feature_list):
+    
+        final={}
 
-        # 1. Merge with defaults
-        final_features = self.default_values.copy()
-
-        for key, value in mapped_features.items():
-            if key in final_features:
-                try:
-                    # Convert safely to float/int
-                    final_features[key] = float(value)
-                except:
-                    final_features[key] = self.default_values[key]
-
+        for f in feature_list:
+            try:
+                final[f]=float(mapped_features.get(f,0))
+            except:
+                final[f]=0
+                
         # 2. Create ordered vector
-        feature_vector = [final_features[f] for f in self.feature_order]
+        feature_vector = [final[f] for f in feature_list]
 
         # 3. Debug logs
-        print("FINAL FEATURE DICT:", final_features)
+        print("FINAL FEATURE DICT:", final)
         print("FINAL FEATURE VECTOR:", feature_vector)
 
         return feature_vector
