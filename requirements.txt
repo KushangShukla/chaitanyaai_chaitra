@@ -22,3 +22,5 @@ accelerate
 django
 djangorestframework
 djangorestframework-simplejwt
+pyotp
+qrcode[pil]
