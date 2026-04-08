@@ -36,29 +36,29 @@ class ModelManager:
             }
         }
 
-        def select_model(self,query):
-            q=query.lower()
+    def select_model(self,query):
+        q=query.lower()
 
-            # Advanced queries -> refined model
-            if "lag" in q or "trend" in q:
-                return self.models["refined"]
+        # Advanced queries -> refined model
+        if "lag" in q or "trend" in q:
+            return self.models["refined"]
             
-            # Default -> ml_ready model
-            return self.models["ml_ready"]
+        # Default -> ml_ready model
+        return self.models["ml_ready"]
 
-        def format(self, mapped_features, feature_list):
+    def format(self, mapped_features, feature_list):
     
-            final = {}
+        final = {}
+        
+        for f in feature_list:
+            try:
+                final[f] = float(mapped_features.get(f, 0))
+            except:
+                final[f] = 0
 
-            for f in feature_list:
-                try:
-                    final[f] = float(mapped_features.get(f, 0))
-                except:
-                    final[f] = 0
+        feature_vector = [final[f] for f in feature_list]
 
-            feature_vector = [final[f] for f in feature_list]
+        print("DYNAMIC FEATURES:", final)
+        print("FEATURE VECTOR:", feature_vector)
 
-            print("DYNAMIC FEATURES:", final)
-            print("FEATURE VECTOR:", feature_vector)
-
-            return feature_vector
+        return feature_vector
