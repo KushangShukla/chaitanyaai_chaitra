@@ -39,6 +39,21 @@ class QueryRouter:
     # =========================
     #  ML PIPELINE
     # =========================
+        self.table_name="walmart_sales_refined"
+
+        self.columns=[
+        "sales_lag_1",
+        "sales_lag_2",
+        "isholiday",
+        "store_sales_ratio",
+        "dept_sales_ratio",
+        "dept_avg_sales",
+        "dept_median_sales",
+        "store_median_sales",
+        "store_avg_sales",
+        "weekly_sales"
+    ]
+
     def run_ml(self, query, user_id="default_user", input_type="text"):
         start_time = time.time()
 
@@ -180,7 +195,7 @@ Answer:
         if not response or len(response.strip()) < 5:
             response = "I couldn't generate a proper answer. Try again."
 
-        response = self._sanitize_response(response)
+        response = self.sanitize_response(response)
 
         # Clean unwanted outputs
         if any(x in response for x in ["import", "def", "class"]):
@@ -254,47 +269,74 @@ Answer:
         return columns
     
     
-    def normalize_sql(self,query):
+    def map_column(self,query):
 
         query=query.lower()
 
         mapping={
-            "deparment":"dept",
-            "deparmtent avgerage sales":"dept_avg_sales",
-            "average department sales":"dept_avg_sales",
+            "sales last week":"sales_lag_1",
+            "sales 2 weeks ago":"sales_lag_2",
+            "is holiday":"isholiday",
+            "store sales ratio":"store_sales_ratio",
+            "department sales ratio":"dept_sales_ratio",
+            "department average sales":"dept_avg_sales",
+            "department median sales":"dept_median_sales",
+            "store median sales":"store_median_sales",
             "store average sales":"store_avg_sales",
-            "median_sales":"store_median_sales"
+            "weekly sales":"weekly_sales"
         }
+
+        for k,v in mapping.items():
+            if k in query:
+                return v
+        return None
     
-    def generate_sql(self,query,table_name="walmart_sales_refined",columns=None):
+    def detect_opertion(self,query):
+        
+        query=query.lower()
 
-        columns_str=" , ".join(columns)
+        if "average" in query or "avg" in query:
+            return "avg"
+        
+        if "max" in query or "highest" in query:
+            return "max"
 
-        prompt=f"""
-        You are an expert SQL generator.
+        if "min" in query or "lowest" in query:
+            return "min"
 
-        STRICT RULES:
-        - Only use table {table_name}
-        - Only use these columns: {columns_str}
-        - NEVER invent coluimn names
-        - NEVER use other tables
-        - If user asks "department",map to "dept"
-        - If use asks "average", use AVG()
-        - Do not hallucinate columns
-        - Return ONLY SQL query
-        - No explanttions
+        if "median" in query:
+            return "median"
+        
+        if "show" in query or "list" in query or "display" in query:
+            return "select"
+        
+        return "select"
+    
+    def build_sql(self,query):
+        
+        column=self.map_column(query)
+        operation=self.detect_opertion(query)
 
-        User Query:
-        {query}
+        if not column:
+            return None, "Could not identify a valid column in the query."
+            
+        table=self.table_name
 
-        SQL:
-        """
-        sql=self.llm.generate(prompt)
+        if operation == "avg":
+            sql=f"SELECT AVG({column}) FROM {table};"
 
-        # Clean Output
-        sql=sql.strip().replace("'''sql", "").replace ("'''", "")
+        elif operation == "max":
+            sql=f"SELECT MAX({column}) FROM {table};"
 
-        return sql
+        elif operation == "min":  
+            sql=f"SELECT MIN({column}) FROM {table};"
+        
+        elif operation == "median":
+            sql=f"""SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY {column}) FROM {table};"""
+
+        else:
+            sql=f"SELECT {column} FROM {table} LIMIT 10;"
+        return sql, None
     
     def execute_sql(self,sql):
 
@@ -308,13 +350,16 @@ Answer:
             )
 
             cursor=conn.cursor()
+            cursor.execute(sql)
 
-            result=cursor.fetchall()
-            columns=[desc[0] for desc in cursor.description]
+            if "avg" in sql.lower() or "max" in sql.lower() or "min" in sql.lower() or "percentile_cont" in sql.lower():    
+                result=cursor.fetchone()
+            else:
+                result=cursor.fetchall()
 
             conn.close()
 
-            return columns,result
+            return result,None
     
         except Exception as e:
             return None, f"SQL Error: {str(e)}"
@@ -323,34 +368,39 @@ Answer:
     
         table_name="walmart_sales_refined"
 
-        try:
-            # 1. Get schema
-            columns=self.get_table_schema(table_name)
+        sql, error = self.build_sql(query)
 
-            # 2. Generate SQL
-            sql=self.generate_sql(query,table_name,columns)
-            print("Generated SQL:", sql)
+        if error:
+            return error
+        
+        print("Final SQL:", sql)
 
-            # Safety check for SQL
-            if "drop" in sql.lower() or "delete" in sql.lower():
-                return "Unsafe query blocked."
-            
-            # 3. Execute SQL
-            cols, result = self.execute_sql(sql)
-            if result is None:
-                return cols # error message
-            
-            elif len(result) == 0:
-                return "No data found."
-            
-            if not result:
-                return "No data found."
-            
-            # 4. Format response
-            return self.format_sql_response(cols, result)
+        # Execute 
+        result,err= self.execute_sql(sql)
 
-        except Exception as e:
-            return f"Data Lookup Error: {str(e)}"
+        if err:
+            return f"SQL Error: {err}"
+        
+        if not result:
+            return "No data found."
+        
+        if isinstance(result, tuple):
+            value=result[0]
+        else:
+            value=result[0][0]
+
+        if value is None:
+            return "No data available for this query."
+        return f"""
+        Key Insight:
+        Result is {round(float(value), 2)}
+
+        Recommendation:
+        Use this metric for analysis.
+
+        Risk:
+        Single metric may not reflect full distribution.
+        """
 
     def format_sql_response(self, columns,result):
 
@@ -377,10 +427,6 @@ Answer:
     def detect_intent(self, query):
 
         q = query.lower()
-
-        #  DATA LOOKUP (MOST IMPORTANT)
-        if any(word in q for word in ["what is", "show", "value", "average", "avg"]):
-            return "data_lookup"
 
         # ML
         if "predict" in q or "forecast" in q:
