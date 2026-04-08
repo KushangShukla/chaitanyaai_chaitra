@@ -8,7 +8,7 @@ import psycopg2
 from scripts.orchestrator.query_router import QueryRouter
 
 router=APIRouter()
-SALES_DATA_TABLE = "walmart_sales_ml_ready_final"
+SALES_DATA_TABLE = "walmart_sales_refined"
 
 # Initialize once
 query_router=QueryRouter()

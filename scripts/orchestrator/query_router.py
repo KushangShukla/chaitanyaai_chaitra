@@ -16,7 +16,7 @@ from scripts.utils.querry_logger import QueryLogger
 
 import time
 import re
-
+import psycopg2
 
 class QueryRouter:
 
@@ -55,10 +55,15 @@ class QueryRouter:
                 return "Could not extract valid features from query."
 
             # 2. Format for model
-            features = self.feature_formatter.format(mapped_features)
+            model_info= self.model_manager.select_model(query)
+
+            model=model_info["model"]
+            features_required=model_info["features"]
+
+            features=self.feature_formatter.format(mapped_features,features_required)
 
             # 3. Prediction
-            prediction = self.model_manager.predict(query, features)
+            prediction = model.predict([features])
 
             # 4. Save training data
             self.data_collector.save(mapped_features, float(prediction))
@@ -117,7 +122,15 @@ External factors like economic shifts may impact prediction accuracy.
 
             # Memory (light)
             history = self.memory.get_recent_history(user_id)
-            memory_context = build_memory_context(history[:2])
+            memory_context = build_memory_context(history[:100])
+
+            intent=self.detect_intent(query)
+
+            if intent == "data_lookup":
+                response = self.run_data_lookup(query)
+
+            if "sales" in query.lower() and "predict" not in query.lower():
+                return self.run_data_lookup(query)
 
             # ================= ML =================
             if intent == "ml_prediction":
@@ -131,7 +144,7 @@ External factors like economic shifts may impact prediction accuracy.
                 prompt = f"""
 You are CHAITRA, a practical business analyst assistant.
 Use the context and answer the question in plain text.
-Keep the answer concise, factual, and avoid bullet emojis.
+Give a complete and factual answer. Avoid emojis and template labels.
 
 Context:
 {rag_context}
@@ -148,7 +161,7 @@ Answer:
             else:
                 prompt = f"""
 You are CHAITRA, a helpful assistant.
-Answer clearly in plain text using 2-4 short sentences.
+Answer clearly in plain text with full details when needed.
 Do not use templates, emojis, or repeated labels.
 
 Question:
@@ -182,7 +195,7 @@ Answer:
 
         return response
 
-    def _sanitize_response(self, text):
+    def sanitize_response(self, text):
         cleaned = (text or "").strip()
         if not cleaned:
             return cleaned
@@ -206,9 +219,9 @@ Answer:
                     if second_idx != -1:
                         cleaned = cleaned[:second_idx].strip()
 
-        # Hard cap overly long noisy generations
-        if len(cleaned) > 900:
-            cleaned = cleaned[:900].rstrip() + "..."
+        # Safety cap for extreme runaway generations
+        if len(cleaned) > 3500:
+            cleaned = cleaned[:3500].rstrip() + "..."
 
         # If output is mostly template noise, force clean fallback
         noise_tokens = ["💡", "📖", "📝", "🔍", "Best Practice", "Case Study", "Next Steps"]
@@ -217,16 +230,165 @@ Answer:
 
         return cleaned
 
+    def get_table_schema(self, table_name="walmart_sales_refined"):
+
+        conn=psycopg2.connect(
+            dbname="chaitra_db",
+            user="postgres",
+            password="root64",
+            host="localhost",
+            port="5432"
+        )
+
+        cursor=conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name='(walmart_sales_refined)'
+            """)
+        
+        columns=[row[0] for row in cursor.fetchall()]
+        conn.close()
+
+        return columns
+    
+    
+    def normalize_sql(self,query):
+
+        query=query.lower()
+
+        mapping={
+            "deparment":"dept",
+            "deparmtent avgerage sales":"dept_avg_sales",
+            "average department sales":"dept_avg_sales",
+            "store average sales":"store_avg_sales",
+            "median_sales":"store_median_sales"
+        }
+    
+    def generate_sql(self,query,table_name="walmart_sales_refined",columns=None):
+
+        columns_str=" , ".join(columns)
+
+        prompt=f"""
+        You are an expert SQL generator.
+
+        STRICT RULES:
+        - Only use table {table_name}
+        - Only use these columns: {columns_str}
+        - NEVER invent coluimn names
+        - NEVER use other tables
+        - If user asks "department",map to "dept"
+        - If use asks "average", use AVG()
+        - Do not hallucinate columns
+        - Return ONLY SQL query
+        - No explanttions
+
+        User Query:
+        {query}
+
+        SQL:
+        """
+        sql=self.llm.generate(prompt)
+
+        # Clean Output
+        sql=sql.strip().replace("'''sql", "").replace ("'''", "")
+
+        return sql
+    
+    def execute_sql(self,sql):
+
+        try:
+            conn=psycopg2.connect(
+                dbname="chaitra_db",
+                user="postgres",
+                password="root64",
+                host="localhost",
+                port="5432"
+            )
+
+            cursor=conn.cursor()
+
+            result=cursor.fetchall()
+            columns=[desc[0] for desc in cursor.description]
+
+            conn.close()
+
+            return columns,result
+    
+        except Exception as e:
+            return None, f"SQL Error: {str(e)}"
+
+    def run_data_lookup(self, query):
+    
+        table_name="walmart_sales_refined"
+
+        try:
+            # 1. Get schema
+            columns=self.get_table_schema(table_name)
+
+            # 2. Generate SQL
+            sql=self.generate_sql(query,table_name,columns)
+            print("Generated SQL:", sql)
+
+            # Safety check for SQL
+            if "drop" in sql.lower() or "delete" in sql.lower():
+                return "Unsafe query blocked."
+            
+            # 3. Execute SQL
+            cols, result = self.execute_sql(sql)
+            if result is None:
+                return cols # error message
+            
+            elif len(result) == 0:
+                return "No data found."
+            
+            if not result:
+                return "No data found."
+            
+            # 4. Format response
+            return self.format_sql_response(cols, result)
+
+        except Exception as e:
+            return f"Data Lookup Error: {str(e)}"
+
+    def format_sql_response(self, columns,result):
+
+        # Take first few rows (preview)
+        preview=result[:10]
+
+        response="\n Key Insights:\n"
+
+        for row in preview:
+            row_text=" , ".join(
+                f"{columns[i]}: {row[i]}" for i in range(len(columns))
+            )
+            response+=f"- {row_text}\n"
+
+            response+="\n Recommendation: \nUse filters for deeper insights."
+
+            response+="\n\n Risk: \nLarge datasets may require aggregation."
+
+            return response
+
     # =========================
     #  INTENT DETECTION
     # =========================
     def detect_intent(self, query):
-        query = query.lower()
 
-        if "predict" in query or "forecast" in query:
+        q = query.lower()
+
+        #  DATA LOOKUP (MOST IMPORTANT)
+        if any(word in q for word in ["what is", "show", "value", "average", "avg"]):
+            return "data_lookup"
+
+        # ML
+        if "predict" in q or "forecast" in q:
             return "ml_prediction"
 
-        if "why" in query or "explain" in query:
-            return "rag_explanation"
+        # RAG
+        if "why" in q or "reason" in q or "explain" in q:
+            return "rag"
 
-        return "general_llm"
+        
+        return "llm"

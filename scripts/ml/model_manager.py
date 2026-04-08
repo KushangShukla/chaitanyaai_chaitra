@@ -1,66 +1,64 @@
 import joblib
 import numpy as np
 
-
 class ModelManager:
-
+    
     def __init__(self):
-        # Load models
+
         self.models = {
-            "sales": joblib.load(
-                r"D:/Projects/CHAITRA/data/Outputs/final_model_production/final_model_production.pkl"
-            ),
+            "refined": {
+                "model": joblib.load("D:/Projects/CHAITRA/data/Outputs/final_model_production/final_model_production.pkl"),
+                "features": [
+                    "sales_lag_1",
+                    "sales_lag_2",
+                    "isholiday",
+                    "store_sales_ratio",
+                    "dept_sales_ratio",
+                    "dept_avg_sales",
+                    "dept_median_sales",
+                    "store_median_sales",
+                    "store_avg_sales"
+                ]
+            },
+
+            "ml_ready": {
+                "model": joblib.load("D:/Projects/CHAITRA/data/Outputs/hyperparameter_tuning/final_model_week5_tuned.pkl"),
+                "features": [
+                    "store",
+                    "dept",
+                    "week",
+                    "cpi",
+                    "temperature",
+                    "unemployment",
+                    "isholiday",
+                    "size"
+                ]
+            }
         }
 
-        # Expected feature size (IMPORTANT)
-        self.expected_features = 9
+        def select_model(self,query):
+            q=query.lower()
 
-    # =========================
-    #  MODEL SELECTION
-    # =========================
-    def select_model(self, query):
-        query = query.lower()
+            # Advanced queries -> refined model
+            if "lag" in q or "trend" in q:
+                return self.models["refined"]
+            
+            # Default -> ml_ready model
+            return self.models["ml_ready"]
 
-        if "sales" in query or "revenue" in query or "forecast" in query:
-            return self.models["sales"]
+        def format(self, mapped_features, feature_list):
+    
+            final = {}
 
-        return self.models["sales"]
+            for f in feature_list:
+                try:
+                    final[f] = float(mapped_features.get(f, 0))
+                except:
+                    final[f] = 0
 
-    # =========================
-    #  FEATURE SAFETY FIX
-    # =========================
-    def validate_features(self, features):
-        print("MODEL INPUT FEATURES:", features)
+            feature_vector = [final[f] for f in feature_list]
 
-        if not isinstance(features, (list, tuple, np.ndarray)):
-            raise ValueError("Features must be a list or array")
+            print("DYNAMIC FEATURES:", final)
+            print("FEATURE VECTOR:", feature_vector)
 
-        # Fix feature size mismatch
-        if len(features) < self.expected_features:
-            # pad with zeros
-            features = list(features) + [0] * (self.expected_features - len(features))
-
-        elif len(features) > self.expected_features:
-            # trim extra
-            features = features[:self.expected_features]
-
-        print("FINAL FEATURES USED:", features)
-
-        return features
-
-    # =========================
-    #  PREDICTION
-    # =========================
-    def predict(self, query, features):
-        try:
-            model = self.select_model(query)
-
-            features = self.validate_features(features)
-
-            prediction = model.predict([features])[0]
-
-            return float(prediction)
-
-        except Exception as e:
-            print("MODEL ERROR:", e)
-            raise e
+            return feature_vector

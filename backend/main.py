@@ -15,7 +15,7 @@ app = FastAPI(title="CHAITRA AI API")
 JWT_SECRET = os.getenv("JWT_SECRET", "chaitra_dev_secret_change_me")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
-SALES_DATA_TABLE = "walmart_sales_ml_ready_final"
+SALES_DATA_TABLE = "walmart_sales_refined"
 
 
 # =========================
