@@ -10,11 +10,13 @@ from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 import jwt
 from backend.routes.auth import router as auth_router
+from backend.routes.upload import router as upload_router
 
 app = FastAPI(title="CHAITRA AI API")
 app.include_router(query_router)
 app.include_router(predict_router)
 app.include_router(auth_router)
+app.include_router(upload_router)
 
 JWT_SECRET = os.getenv("JWT_SECRET", "chaitra_dev_secret_change_me")
 JWT_ALGORITHM = "HS256"
