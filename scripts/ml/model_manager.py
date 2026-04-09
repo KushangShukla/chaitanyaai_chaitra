@@ -36,8 +36,21 @@ class ModelManager:
             }
         }
 
+        # AutoML Model (Dynamic)
+        self.automl_model=None
+
+    def set_automl_model(self,model,features):
+        self.automl_model={
+            "model":model,
+            "features":features
+        }
+
     def select_model(self,query):
         q=query.lower()
+
+        # Prioriry -> AutoML if exists
+        if self.automl_model:
+            return self.automl_model 
 
         # Advanced queries -> refined model
         if "lag" in q or "trend" in q:

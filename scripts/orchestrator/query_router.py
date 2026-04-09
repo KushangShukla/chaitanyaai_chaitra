@@ -150,6 +150,9 @@ External factors like economic shifts may impact prediction accuracy.
             
             if self.is_sql_query(query):
                 return "⚠️ Direct SQL queries are not allowed. Please ask in natural language."
+            
+            if "train model" in query.lower() or "automl" in query.lower():
+                return self.run_automl("your_uploaded_table")
 
             # ================= ML =================
             if intent == "ml_prediction":
@@ -363,7 +366,7 @@ Answer:
             "store median sales":"store_median_sales",
 
             "store average sales":"store_avg_sales",
-            
+
             "weekly sales":"weekly_sales"
         }
 
@@ -511,6 +514,28 @@ Answer:
             response+="\n\n Risk: \nLarge datasets may require aggregation."
 
             return response
+        
+    def run_automl(self,table_name):
+
+        try:
+            print("Running AutoMl on:", table_name)
+
+            model, features = self.trainer.train(table_name)
+
+            # Set Model
+            self.model_manager.set_automl_model(model, features)
+
+            return f"""
+            AutoML Training Complete.
+
+            Model trained on {table_name}
+            Features used: {features}
+
+            You can now ask predictions on this dataset.
+            """
+
+        except Exception as e:
+            print(f"AutoML Error: {str(e)}")
 
     # =========================
     #  INTENT DETECTION

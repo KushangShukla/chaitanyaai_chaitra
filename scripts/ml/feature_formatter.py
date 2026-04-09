@@ -34,6 +34,8 @@ class FeatureFormatter:
         for f in feature_list:
             try:
                 final[f]=float(mapped_features.get(f,0))
+        
+                return [final [f] for f in feature_list]
             except:
                 final[f]=0
                 

@@ -18,7 +18,8 @@ const Settings=({ onLogout }: any) => {
     // 2FA States
     const[qr,setQr]=useState("");
     const[otp,setOtp]=useState("");
-    const[userId]=useState("default_user"); //replace with actual user ID from session
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId=user?.id;
 
     useEffect(() => {
         getSettings()
@@ -74,7 +75,7 @@ const Settings=({ onLogout }: any) => {
         const data=await res.json();
         setStatus(data.message||data.error);
     };
-    
+
     return (
         <div className="glass" style={{ maxWidth: "720px", display: "grid", gap: "12px" }}>
             <h2>Settings</h2>
@@ -144,7 +145,7 @@ const Settings=({ onLogout }: any) => {
                         </button>
                     ))}
                 </div>
-            </div>
+            </div>  
 
             <div>
                 <button onClick={handleSave}>Save Settings</button>

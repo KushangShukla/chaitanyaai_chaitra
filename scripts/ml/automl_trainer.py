@@ -63,3 +63,5 @@ class AutoMLTrainer:
             joblib.dump(best_model,"scripts/ml/auto_model.pkl")
 
             print("Best model saved")
+
+            return best_model,list(X.columns)

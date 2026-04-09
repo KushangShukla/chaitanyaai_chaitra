@@ -13,7 +13,6 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import TwoFA from "./pages/TwoFA";
-import MainApp from "./App";
 import { clearAuthSession, getStoredToken } from "./services/api";
 
 function App() {
@@ -24,14 +23,6 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(Boolean(getStoredToken()));
   const [authPage, setAuthPage] = useState<"login" | "signup">("login");
   const [authStep, setAuthStep] = useState("login");
-
-  if (authStep==="login")
-    return <Login onSuccess={setAuthStep}/>;
-  if (authStep==="2fa")
-    return <TwoFA onSuccess={()=> setAuthStep("app")}/>;
-  if (authStep==="app")
-    return <MainApp/>;
-
 
   //  Cursor Glow Tracking (BACKGROUND EFFECT)
   useEffect(() => {
@@ -71,6 +62,11 @@ function App() {
         );
     }
   };
+
+  if (authStep==="login")
+    return <Login onSuccess={setAuthStep}/>;
+  if (authStep==="2fa")
+    return <TwoFA onSuccess={()=> setAuthStep("app")}/>;
 
   return (
     <div className="app-container">
