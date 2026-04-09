@@ -13,6 +13,15 @@ const Login = ({ onSuccess, onSwitch }: any) => {
             setError(data?.error || "Login failed");
             return;
         }
+
+        // 2FA Required
+        if (data?.two_fa_required) {
+            localStorage.setItem("2fa_user", data.user.id);
+            onSuccess("2fa"); // switch screen to 2FA verification
+            return;
+        }
+
+        // Normal Login
         setAuthSession(data.token, data.user);
         onSuccess?.();
     };
