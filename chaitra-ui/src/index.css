@@ -109,7 +109,7 @@ body::after {
 /*  VOICE PULSE */
 .pulse {
   width: 20px;
-  height: 20px;
+  height: 10px;
   background: #22c55e;
   border-radius: 50%;
   animation: pulse 1s infinite;
@@ -469,8 +469,10 @@ body::after {
   flex-direction: column;
 }
 
-.chat-messages {
-  flex: 1;
+.chat-messages span {
+  max-width: 70%;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .chat-input-wrap {
@@ -556,4 +558,39 @@ body::after {
 body.theme-light {
   background: #f3f7ff;
   color: #0f172a;
+}
+/* Wrapper */
+.msg-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* Hidden controls */
+.controls {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: all 0.2s ease;
+}
+
+/* Show on hover */
+.msg-wrapper:hover .controls {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Small buttons */
+.controls button {
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.chat-messages{
+  width:100%;
+  overflow-x: hidden;
 }

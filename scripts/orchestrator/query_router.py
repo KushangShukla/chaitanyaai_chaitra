@@ -331,16 +331,39 @@ Answer:
 
         query=query.lower()
 
+        # Normalize variations
+        query=query.replace("week's","week")
+        query=query.replace("weeks","week")
+        query=query.replace("holiday","isholiday")
+        query=query.replace("_"," ")
+        query=query.replace("-"," ")
+
         mapping={
             "sales last week":"sales_lag_1",
+            "last week sales":"sales_lag_1",
+            "previous_week_sales":"sales_lag_1",
+
+            "sales 2 week":"sales_lag_2",
+            "sales two week":"sales_lag_2",
             "sales 2 weeks ago":"sales_lag_2",
+
             "is holiday":"isholiday",
+            "holiday":"isholiday",
+
             "store sales ratio":"store_sales_ratio",
+
             "department sales ratio":"dept_sales_ratio",
+
             "department average sales":"dept_avg_sales",
+            "dept avg sales":"dept_avg_sales",
+
+            "dept median sales":"dept_median_sales",
             "department median sales":"dept_median_sales",
+
             "store median sales":"store_median_sales",
+
             "store average sales":"store_avg_sales",
+            
             "weekly sales":"weekly_sales"
         }
 

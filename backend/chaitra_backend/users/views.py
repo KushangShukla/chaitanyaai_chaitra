@@ -46,7 +46,7 @@ def signup(request):
 @api_view(["POST"])
 def login(request):
     user=authenticate(
-        username=request.data["email"]
+        username=request.data["semail"]
         password=request.data["password"]
     )
     if user:

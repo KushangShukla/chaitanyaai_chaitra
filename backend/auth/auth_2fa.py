@@ -14,3 +14,7 @@ def generate_2fa_secret(username):
     qr.save(buffer, format="PNG")
     qr_image=base64.b64encode(buffer.getvalue()).decode()
     return secret, qr_image
+
+def verify_otp(secret, otp):
+    totp=pyotp.TOTP(secret)
+    return totp.verify(otp)

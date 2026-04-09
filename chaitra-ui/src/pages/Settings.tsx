@@ -15,6 +15,11 @@ const Settings=({ onLogout }: any) => {
     const [retention, setRetention] = useState("90_days");
     const [status, setStatus] = useState("");
 
+    // 2FA States
+    const[qr,setQr]=useState("");
+    const[otp,setOtp]=useState("");
+    const[userId]=useState("default_user"); //replace with actual user ID from session
+
     useEffect(() => {
         getSettings()
             .then((res) => {
@@ -48,6 +53,28 @@ const Settings=({ onLogout }: any) => {
         setStatus(res?.status === "success" ? "Settings saved." : (res?.error || "Save failed."));
     };
 
+    // Enable 2FA
+    const enable2FA=async()=>{
+        const res=await fetch("http://localhost:8000/generate-2fa",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({user_id:userId}),
+        });
+        const data=await res.json();
+        setQr(data.qr_code);
+    };
+
+    // Verify 2FA OTP
+    const verify2FA=async()=>{
+        const res=await fetch("http://localhost:8000/verify-2fa",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({user_id:userId, otp}),
+        });
+        const data=await res.json();
+        setStatus(data.message||data.error);
+    };
+    
     return (
         <div className="glass" style={{ maxWidth: "720px", display: "grid", gap: "12px" }}>
             <h2>Settings</h2>
@@ -80,6 +107,28 @@ const Settings=({ onLogout }: any) => {
                         </button>
                     ))}
                 </div>
+            </div>
+
+            {/* 2FA Section */}
+            <div className="glass">
+                <h3>Two-Factor Authentication</h3>
+
+                <button onClick={enable2FA}>Enable 2FA</button>
+
+                {qr && (
+                    <div style={{ marginTop: "10px" }}>
+                        <p>Scan this QR code with Google Authenticator:</p>
+                        <img src={`data:image/png;base64,${qr}`} alt="2FA QR Code" style={{ width: "200px", height: "200px" }} />
+                    </div>
+                )}
+
+                {qr && (
+                <>
+                    <input placeholder="Enter OTP" value={otp} onChange={(e) => setOtp(e.target.value)}/>
+                    <button onClick={verify2FA}>Verify OTP</button>
+                </>
+                )}
+
             </div>
 
             <div>
