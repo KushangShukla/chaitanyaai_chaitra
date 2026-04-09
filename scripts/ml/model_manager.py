@@ -2,6 +2,15 @@ import joblib
 import numpy as np
 
 class ModelManager:
+    _instance=None
+
+    # Made Model Manager Singleton so that Model Manager inside upload != Model Manager inside Query Router
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance=super().__new__(cls)
+            cls._instance.models={}
+            cls._instance.automl_model=None
+        return cls._instance
     
     def __init__(self):
 
