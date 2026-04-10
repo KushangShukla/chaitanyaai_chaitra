@@ -37,3 +37,19 @@ def standardize(df,mapping):
     df_std.rename(columns=rename_map,inplace=True)
 
     return df_std
+
+# For ML Query Pipeline
+class SchemaMapper:
+    def map(self,raw_features):
+        mapped={}
+
+        # Default-safe mapping
+
+        mapped["store"]=int(raw_features.get("Store",1))
+        mapped["department"]=int(raw_features.get("department",1))
+
+        # External Factors
+        mapped["fuel_price"]=float(raw_features.get("fuel_price",2.5))
+        mapped["cpi"]=float(raw_features.get("cpi",200))
+
+        return mapped

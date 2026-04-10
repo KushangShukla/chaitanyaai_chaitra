@@ -8,7 +8,8 @@ from scripts.utils.logger import log
 
 from scripts.ml.model_manager import ModelManager
 from scripts.ml.feature_extractor import FeatureExtractor
-from scripts.ml.schema_mapper import SchemaMapper
+from scripts.schema_mapper import SchemaMapper
+from scripts.schema_mapper import detect_schema
 from scripts.ml.data_collector import DataCollector
 from scripts.ml.feature_formatter import FeatureFormatter
 from scripts.ml.automl_trainer import AutoMLTrainer
@@ -55,6 +56,28 @@ class QueryRouter:
         "weekly_sales"
     ]
 
+    def route_hybrid_safe(self,query):
+        q=query.lower()
+
+        # ML Prediction
+        if "predict" in q or "forecast" in q:
+            return "ml_prediction"
+        
+        # SQL Data Lookup
+        if any(x in q for x in ["average","avg","max","min","median"]):
+            return "data_lookup"
+        
+        # ML Feature Explanation (New)
+        if "feature" in q or "model uses" in q:
+            return "ml_explain"
+        
+        # RAG (DOCUMENTS/WHY)
+        if "why" in q or "explain" in q or len(q.split())>8:
+            return "rag_explanation"
+
+        # Default
+        return "general_llm"
+    
     def run_ml(self, query, user_id="default_user", input_type="text"):
         start_time = time.time()
 
@@ -62,6 +85,9 @@ class QueryRouter:
             # 1. Extract Features
             raw_features = self.feature_extractor.extract(query)
             print("RAW FEATURES:", raw_features)
+
+            mapped_features=self.schema_mapper.map(raw_features)
+            print("MAPPED FEATURES BEFORE ENRICH:", mapped_features)
 
             mapped_features=self.enrich_features_from_db(mapped_features) 
             print("MAPPED FEATURES:", mapped_features)
@@ -140,7 +166,7 @@ External factors like economic shifts may impact prediction accuracy.
             history = self.memory.get_recent_history(user_id)
             memory_context = build_memory_context(history[:100])
 
-            intent=self.detect_intent(query)
+            intent=self.route_hybrid_safe(query)
 
             if intent == "data_lookup":
                 response = self.run_data_lookup(query)
@@ -159,12 +185,16 @@ External factors like economic shifts may impact prediction accuracy.
                 response = self.run_ml(query, user_id)
 
             # ================= RAG =================
-            elif intent == "rag_explanation" or len(query.split()) > 8:
+            #elif intent == "rag_explanation" or len(query.split()) > 8:
 
-                rag_context = retrieve_context(query)[:800]
-
+            rag_context = retrieve_context(query)[:800]
+            print("RAG CONTEXT:",rag_context)
+            if rag_context and "No RAG data" not in rag_context:
                 prompt = f"""
 You are CHAITRA, a practical business analyst assistant.
+Answer only from uploaded document.
+Answer ONLY using the provided context.
+Do NOT guess or hallucinate.
 Use the context and answer the question in plain text.
 Give a complete and factual answer. Avoid emojis and template labels.
 
@@ -272,10 +302,9 @@ Answer:
             # Fetch REAL contextual features from DB based on store and department
             cursor.execute(
                 """
-                SELECT store_sales_ratio, dept_sales_ratio, dept_avg_sales, dept_median_sales,
+                SELECT sales_lag_1,sales_lag_2,isholiday,store_sales_ratio, dept_sales_ratio, dept_avg_sales, dept_median_sales,
                 store_median_sales, store_avg_sales
                 FROM walmart_sales_refined
-                WHERE store = %s AND department = %s
                 LIMIT 1
                 """,
                 (store, dept)
@@ -297,7 +326,7 @@ Answer:
                     "store_avg_sales"   
                 ]
                 for i, key in enumerate(keys):
-                    mapped_features[key]=float(row[i])
+                    mapped_features[key]=float(row[i] or 0)
 
                     print("ENRICHED FEATURES:",mapped_features)
 

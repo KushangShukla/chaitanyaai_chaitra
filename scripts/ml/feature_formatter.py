@@ -27,23 +27,17 @@ class FeatureFormatter:
             "prev_month_sales": 12000.0
         }
 
-    def format(self, mapped_features,feature_list):
+    def format(self, mapped_features,feature_required):
     
-        final={}
+        formatted={}
 
-        for f in feature_list:
-            try:
-                final[f]=float(mapped_features.get(f,0))
-        
-                return [final [f] for f in feature_list]
-            except:
-                final[f]=0
-                
-        # 2. Create ordered vector
-        feature_vector = [final[f] for f in feature_list]
+        for f in feature_required:
+            value=mapped_features.get(f,0)
+
+        #formatted.append(float(value))
 
         # 3. Debug logs
-        print("FINAL FEATURE DICT:", final)
-        print("FINAL FEATURE VECTOR:", feature_vector)
+        print("FINAL FEATURES SENT TO MODEL:", formatted)
+        print("TOTAL FEATURES COUNT:", len(formatted))
 
-        return feature_vector
+        return formatted
