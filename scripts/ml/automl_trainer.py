@@ -2,10 +2,12 @@ import psycopg2
 import json
 import joblib
 import pandas as pd
+import numpy as np
 
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score
+from sklearn.model_selection import train_test_split
 
 class AutoMLTrainer:
 
@@ -82,4 +84,23 @@ class AutoMLTrainer:
 
             print("Best model saved")
 
-            return best_model,list(X.columns)
+            feature_names=list(X.columns)
+
+            importance=self.get_feature_importance(best_model,feature_names)
+
+            # Save importance
+            joblib.dump(importance,"scripts/ml/feature_importance.pkl")
+
+            return best_model,feature_names
+        
+    def get_feature_importance(model,feature_names):
+        if hasattr(model,"feature_importances_"):
+            importance=model.feature_importances_
+
+        elif hasattr(model,"coef_"):
+            importance=np.abs(model.coef_)
+        
+        else:
+            return {}
+        
+        return dict(zip(feature_names,importance))
