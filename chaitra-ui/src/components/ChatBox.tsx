@@ -132,7 +132,25 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
     try {
       const res = await sendQuery(voiceText);
 
-      typeText(res?.response || "No response", botIndex);
+      //typeText(res?.response || "No response", botIndex);
+      const data =res;
+      
+      let formatted="";
+
+      if (data?.prediction){
+        formatted +='Prediction: $(data.prediction}\n';
+        formatted +='Confidence: ${data.confidence}%\n\n';
+
+        if (data.explanation){
+          formatted +="Explanation:\n";
+          data.explanation.forEach((e:string)=>{
+            formatted +='• ${e}\n';
+          });
+        }
+      } else {
+        formatted=res?.response || "No response";
+      }
+      typeText(formatted,botIndex);
       onMessageSent?.();
     } catch (err) {
       console.error(err);
@@ -157,7 +175,24 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
     try {
       const res = await sendQuery(query);
 
-      typeText(res?.response || "No response", botIndex);
+      const data =res;
+      
+      let formatted="";
+
+      if (data?.prediction){
+        formatted +='Prediction: $(data.prediction}\n';
+        formatted +='Confidence: ${data.confidence}%\n\n';
+
+        if (data.explanation){
+          formatted +="Explanation:\n";
+          data.explanation.forEach((e:string) =>{
+            formatted +='• ${e}\n';
+          });
+        }
+      } else {
+        formatted=res?.response || "No response";
+      }
+      typeText(formatted,botIndex);
       onMessageSent?.();
     } catch (err) {
       console.error(err);

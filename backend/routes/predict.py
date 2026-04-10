@@ -28,7 +28,40 @@ FEATURE_ORDER=[
 def get_confidence(features):
     score=0
 
-    if features
+    if features.get("sales_lag_1",0) > 0:
+        score +=30
+
+    if features.get("sales_lag_2",0) > 0:
+        score +=20
+
+    if features.get("dept_avg_sales",0) > 0:
+        score +=20
+    
+    if features.get("store_avg_sales",0) > 0:
+        score +=20
+
+    if features.get("isholiday") is not None:
+        score +=10
+
+    return min(score,100)
+
+def explain_prediction(features):
+    explanation=[]
+
+    if features.get("sales_lag_1",0) > 0:
+        explanation.append("Recent sales trend is influencing prediction")
+    
+    if features.get("isholiday") == 1:
+        explanation.append("Holiday impact considered")
+
+    if features.get("fuel_price",0) > 2:
+        explanation.aooend("High fuel price may reduce demand")
+
+    if features.get("dept_avg_sales",0) > 0:
+        explanation.append("Department performance considered")
+    
+    return explanation
+
 
 def get_recent_trend(store,dept):
     conn=psycopg2.connect(
@@ -105,8 +138,16 @@ def predict(data:dict):
 
         print("FINAL PREDICTION",prediction)
 
-        return round(prediction,2)
+        confidence=get_confidence(features)
+        
+        explanation=explain_prediction(features)
 
+        return{
+            "prediction":round(prediction,2),
+            "confidence":confidence,
+            "explanation":explanation
+        }
+    
         #return {
          #   "input":features,
           #  "prediction":float(prediction),

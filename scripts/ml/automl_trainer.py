@@ -18,28 +18,46 @@ class AutoMLTrainer:
             port="5432"
         )
 
-    def load_data(self):
+    def load_data(self,table_name):
 
-        query="SELECT features, target FROM training_data"
+        query=f'SELECT FROM "{table_name}"'
         df=pd.read_sql(query,self.conn)
 
         if df.empty:
             return None,None
         
-        X=df["features"].apply(json.loads).apply(lambda x: list(x.values()))
-        X=pd.DataFrame(X.tolist())
+        print("DATA LOADED:",df.shape)
 
-        y=df["target"]
+        # Auto Target Detection
+        targrt_col=None
+        for col in df.columns:
+            if "sales" in col.lower():
+                target_col=col
+                break
+                
+            if not target_col:
+                raise Exception("No target column (sales) found")
+            
+            print ("TARGET COLUMN:",target_col)
 
-        return X,y
+            # Features
+            X=df.drop(columns=[target_col])
+            y=df[target_col]
+
+            # Handle Non-Numeric 
+            X=X.select_dtypes(include=["int64","float64"])
+
+            print("FEATURE COLUMNS:",list(X.columns))
+
+            return X,y
     
-    def train(self):
+    def train(self,table_name):
 
-        X,y=self.load_data()
+        X,y=self.load_data(table_name)
 
         if X is None:
             print("No training data available")
-            return
+            return None,None
         
         models={
             "linear":LinearRegression(),
