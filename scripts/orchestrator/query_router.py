@@ -176,6 +176,23 @@ External factors like economic shifts may impact prediction accuracy.
             
             if self.is_sql_query(query):
                 return "⚠️ Direct SQL queries are not allowed. Please ask in natural language."
+
+            if intent=="ml_explain":
+                return """
+                The ML model uses the following features:
+
+                - sales_lag_1 (last week sales)
+                - sales_lag_2 (2 weeks ago sales)
+                - isholiday 
+                - store_sales_ratio
+                - dept_sa;es_ratio
+                - dept_avg_sales
+                - dept_median_sales
+                - store_median_sales
+                - store_avg_sales
+
+                These features are engineered from historical and store-level data.
+                """
             
             if "train model" in query.lower() or "automl" in query.lower():
                 return self.run_automl("your_uploaded_table")
