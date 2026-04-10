@@ -32,6 +32,22 @@ const Data=()=> {
                 setStatus("Error uploading file");
             }
         };
+
+        const [pdf,setPdf]=useState<any>(null);
+
+        const handlePDFUpload=async()=> {
+            if (!pdf) return;
+
+            const formData=new FormData();
+            formData.append("file",pdf);
+
+            const res=await fetch ("http://localhost:8000/upload-pdf",{
+                method:"POST",
+                body:formData,
+            });
+            const data=await res.json();
+            setStatus(data.message || data.error);
+        };
         return (
             <div className="glass" 
             style={{padding:"30px",maxWidth:"600px"}}>
@@ -46,6 +62,16 @@ const Data=()=> {
                 <button onClick={handleUpload} style={{marginTop:"10px"}}>
                     Upload & Train AutoML
                 </button>
+
+                <h3 style={{marginTop:"20px"}}>Upload PDF for AI knowledge</h3>
+
+                <input 
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e)=> setPdf(e.target.files?.[0])}
+                />
+
+                <button onClick={handlePDFUpload}>Upload PDF</button>
 
                 {status && <p style={{marginTop:"10px"}}>{status}</p>}
             </div>

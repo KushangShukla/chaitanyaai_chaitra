@@ -24,3 +24,5 @@ djangorestframework
 djangorestframework-simplejwt
 pyotp
 qrcode[pil]
+langchain
+pypdf
