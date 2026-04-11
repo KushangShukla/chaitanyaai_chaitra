@@ -1,5 +1,18 @@
 import joblib
 import numpy as np
+import os
+from sqlalchemy import create_engine
+import pandas as pd
+
+class AutoMLTrainer:
+    def __int__(self):
+         self.engine=create_engine(
+             "postgresql://postgres:root64@localhost:5432/chaitra_db"
+         )
+    def load_data(self,table_name):
+        query=f'SELECT * FROM "{table_name}"'
+        df=pd.read_sql(query,self.engine)
+        return df
 
 class ModelManager:
     _instance=None
@@ -47,6 +60,39 @@ class ModelManager:
 
         # AutoML Model (Dynamic)
         self.automl_model=None
+        self.feature_importance=None
+        self.features=None
+    
+        # Load AutoML
+        self.load_automl()
+
+    def load_automl(self):
+        if os.path.exists("scripts/ml/auto_model.pkl"):
+
+            model=joblib.load("scripts/ml/auto_model.pkl")
+
+            if os.path.exists("scripts/ml/feature_importance.pkl"):
+
+                self.feature_importance=joblib.load("scripts/ml/feature_importance.pkl")
+
+                self_features=list(self.feature_importance.keys())
+
+                self.automl_model={
+                    "model":model,
+                    "features":self_features
+                }
+
+    def predict(self,features_dict):
+        if not self.automl_model:
+            return None
+    
+        FEATURE_ORDER=self.automl_model["features"]
+
+        X=[[features_dict.get(col,0) for col in FEATURE_ORDER]]
+
+        prediction=self.automl_model["model"].predict(X)[0]
+
+        return prediction
 
     def set_automl_model(self,model,features):
         self.automl_model={

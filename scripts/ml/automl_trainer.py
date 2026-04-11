@@ -22,7 +22,7 @@ class AutoMLTrainer:
 
     def load_data(self,table_name):
 
-        query=f'SELECT FROM "{table_name}"'
+        query=f'SELECT * FROM "{table_name}"'
         df=pd.read_sql(query,self.conn)
 
         if df.empty:
@@ -31,27 +31,27 @@ class AutoMLTrainer:
         print("DATA LOADED:",df.shape)
 
         # Auto Target Detection
-        targrt_col=None
+        target_col=None
         for col in df.columns:
             if "sales" in col.lower():
                 target_col=col
                 break
                 
-            if not target_col:
-                raise Exception("No target column (sales) found")
+        if not target_col:
+            raise Exception("No target column (sales) found")
             
-            print ("TARGET COLUMN:",target_col)
+        print ("TARGET COLUMN:",target_col)
 
-            # Features
-            X=df.drop(columns=[target_col])
-            y=df[target_col]
+        # Features
+        X=df.drop(columns=[target_col])
+        y=df[target_col]
 
-            # Handle Non-Numeric 
-            X=X.select_dtypes(include=["int64","float64"])
+        # Handle Non-Numeric 
+        X=X.select_dtypes(include=["int64","float64"])
 
-            print("FEATURE COLUMNS:",list(X.columns))
+        print("FEATURE COLUMNS:",list(X.columns))
 
-            return X,y
+        return X,y
     
     def train(self,table_name):
 
@@ -69,10 +69,17 @@ class AutoMLTrainer:
         best_score=-1
         best_model=None
 
+        X_train,X_test,y_train,y_test=train_test_split(
+            X,y,test_size=0.2,
+            random_state=42
+        )
+
         for name,model in models.items():
-            model.fit(X,y)
-            preds=model.predict(X)
-            score=r2_score(y,preds)
+            model.fit(X_train,y_train)
+
+            preds=model.predict(X_test)
+
+            score=r2_score(y_test,preds)
 
             print(f"{name} score:",score)
 
@@ -93,7 +100,7 @@ class AutoMLTrainer:
 
             return best_model,feature_names
         
-    def get_feature_importance(model,feature_names):
+    def get_feature_importance(self,model,feature_names):
         if hasattr(model,"feature_importances_"):
             importance=model.feature_importances_
 

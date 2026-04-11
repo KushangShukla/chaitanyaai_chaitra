@@ -4,6 +4,10 @@ import numpy as np
 import psycopg2
 import datetime
 
+from scripts.ml.model_manager import ModelManager
+
+model_manager=ModelManager()
+model_manager.load_automl()
 router=APIRouter()
 
 # Load trained model
@@ -55,7 +59,7 @@ def explain_prediction(features):
         explanation.append("Holiday impact considered")
 
     if features.get("fuel_price",0) > 2:
-        explanation.aooend("High fuel price may reduce demand")
+        explanation.append("High fuel price may reduce demand")
 
     if features.get("dept_avg_sales",0) > 0:
         explanation.append("Department performance considered")
@@ -129,7 +133,22 @@ def predict(data:dict):
         print("TOTAL FEATURES COUNT:",len(X[0]))
 
         # Predict
-        prediction=model.predict(X)[0]
+        automl_pred=model_manager.predict(features)
+
+        if automl_pred:
+            prediction=automl_pred
+        else:
+            prediction=model.predict(X)[0]
+        
+        importance=model_manager.feature_importance
+
+        top_features=sorted(
+            importance.items(),
+            key=lambda x:x[1],
+            reverse=True
+        )[:3]
+
+        confidence=min(95,max(60,int(sum([v for _,v in top_features])*100)))
 
         trend=get_recent_trend(features["store"],features["department"])
         prediction=prediction+(0.3*trend)
@@ -140,7 +159,10 @@ def predict(data:dict):
 
         confidence=get_confidence(features)
         
-        explanation=explain_prediction(features)
+        explanation=explain_prediction(features)+[
+             f"{k} influenced prediction ({round(v,2)})"
+            for k,v in top_features
+        ]
 
         return{
             "prediction":round(prediction,2),
