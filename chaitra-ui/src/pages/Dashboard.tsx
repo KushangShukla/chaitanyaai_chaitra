@@ -1,88 +1,78 @@
 import { useEffect, useState } from "react";
 import {
-  CartesianGrid,
-  LineChart,
-  Tooltip,
-  XAxis,
-  YAxis,
-  Line,
-  ResponsiveContainer
+  LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
+  ResponsiveContainer, BarChart, Bar
 } from "recharts";
 import { motion } from "framer-motion";
-import { getDashboard } from "../services/api";
 
 const Dashboard = () => {
-  const [data, setData] = useState<any>({});
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [data, setData] = useState<any>(null);
+
+  const fetchData = () => {
+    fetch("http://localhost:8000/dashboard")
+      .then(res => res.json())
+      .then(setData);
+  };
 
   useEffect(() => {
-    getDashboard()
-      .then((resData) => {
-        setData(resData);
+    fetchData();
 
-        //  Convert backend → chart format
-        if (resData.recent_predictions) {
-          const formatted = resData.recent_predictions.map(
-            (val: number, index: number) => ({
-              name: `#${index + 1}`,
-              sales: val
-            })
-          );
-          setChartData(formatted);
-        } else {
-          // fallback demo
-          setChartData([
-            { name: "1", sales: 12000 },
-            { name: "2", sales: 15000 },
-            { name: "3", sales: 18000 }
-          ]);
-        }
-      })
-      .catch(() => {
-        setData({});
-        setChartData([]);
-      });
+    //  AUTO REFRESH (LIVE DEMO)
+    const interval = setInterval(fetchData, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
+  if (!data) return <p>Loading dashboard...</p>;
+
+  const isPositiveTrend = data.trend > 0;
+
+  //  FORMAT TREND DATA
+  const trendData = data.trend_series?.map((val: number, i: number) => ({
+    name: `T-${data.trend_series.length - i}`,
+    sales: val
+  })) || [];
+
+  //  FORMAT FEATURE IMPORTANCE
+  const featureData = data.feature_importance?.map((f: any) => ({
+    feature: f[0],
+    value: Number((f[1] * 100).toFixed(2))
+  })) || [];
+
   return (
-    <div style={{ padding: "30px" }}>
-      <h2>📊 Business Dashboard</h2>
+    <div style={{ maxWidth: "1100px", margin: "auto", display: "grid", gap: "20px", padding: "20px" }}>
+      
+      <h2> Business Dashboard</h2>
 
-      {/*  KPI CARDS */}
-      <div
-        style={{
-          display: "flex",
-          gap: "20px",
-          marginTop: "20px",
-          flexWrap: "wrap"
-        }}
-      >
-        <motion.div className="glass glow" whileHover={{ scale: 1.05 }}>
-          <h3>Avg Prediction</h3>
-          <p style={{ fontSize: "24px", fontWeight: "bold" }}>
-            {data.avg_prediction || 0}
-          </p>
-        </motion.div>
-
-        <motion.div className="glass glow" whileHover={{ scale: 1.05 }}>
-          <h3>Total Queries</h3>
-          <p style={{ fontSize: "24px", fontWeight: "bold" }}>
-            {data.total_queries || 0}
-          </p>
-        </motion.div>
+      {/* KPI CARDS */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
+        {[
+          { label: "Avg Sales", value: data.kpis.avg_sales },
+          { label: "Max Sales", value: data.kpis.max_sales },
+          { label: "Min Sales", value: data.kpis.min_sales },
+          { label: "Records", value: data.kpis.total_records }
+        ].map((card, idx) => (
+          <motion.div key={idx} className="glass glow" whileHover={{ scale: 1.05 }}>
+            <h4>{card.label}</h4>
+            <h2>₹ {card.value}</h2>
+          </motion.div>
+        ))}
       </div>
 
-      {/*  CHART */}
-      <motion.div
-        className="glass glow"
-        style={{ marginTop: "30px", padding: "20px" }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      {/* TREND */}
+      <div className="glass">
         <h3> Sales Trend</h3>
+        <p style={{ color: isPositiveTrend ? "#22c55e" : "#ef4444" }}>
+          {isPositiveTrend ? "Increasing " : "Decreasing "} ({data.trend})
+        </p>
+      </div>
+
+      {/*  REAL TIME TREND CHART */}
+      <motion.div className="glass glow" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <h3> Real Sales Trend (Last Data Points)</h3>
 
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
+          <LineChart data={trendData}>
             <XAxis dataKey="name" stroke="#94a3b8" />
             <YAxis stroke="#94a3b8" />
             <Tooltip />
@@ -90,13 +80,43 @@ const Dashboard = () => {
             <Line
               type="monotone"
               dataKey="sales"
-              stroke="#38bdf8"
-              strokeWidth={2}
-              dot={{ r: 4 }}
+              stroke="#22c55e"
+              strokeWidth={3}
+              dot={{ r: 3 }}
             />
           </LineChart>
         </ResponsiveContainer>
       </motion.div>
+
+      {/*  FEATURE IMPORTANCE */}
+      <motion.div className="glass glow" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <h3> Feature Importance (Model Explainability)</h3>
+
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={featureData}>
+            <XAxis dataKey="feature" stroke="#94a3b8" />
+            <YAxis stroke="#94a3b8" />
+            <Tooltip />
+            <CartesianGrid stroke="#1e293b" />
+            <Bar dataKey="value" />
+          </BarChart>
+        </ResponsiveContainer>
+      </motion.div>
+
+      {/* INSIGHTS */}
+      <div className="glass">
+        <h3> AI Insights</h3>
+        {data.insights.map((i: string, idx: number) => (
+          <p key={idx}>• {i}</p>
+        ))}
+      </div>
+
+      {/* EXPLANATION */}
+      <div className="glass">
+        <h3> Business Explanation</h3>
+        <p>{data.explanation}</p>
+      </div>
+
     </div>
   );
 };
