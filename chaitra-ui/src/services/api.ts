@@ -4,6 +4,15 @@ const API = axios.create({
   baseURL: "http://localhost:8000",
 });
 
+export const getAuthHeaders=() => {
+  const token=localStorage.getItem("auth_token");
+
+  return {
+    "Content-Type":"application/json",
+    Authorization:`Bearer ${token}`
+  };
+};
+
 export const getStoredToken = () => localStorage.getItem("chaitra_token");
 export const getStoredUser = () => {
   const raw = localStorage.getItem("chaitra_user");

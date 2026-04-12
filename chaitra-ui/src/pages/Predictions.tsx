@@ -23,7 +23,7 @@ const Predictions = () => {
 
   return (
     <div style={{ padding: "30px" }}>
-      <h2>🔮 Live Predictions</h2>
+      <h2> Live Predictions</h2>
 
       {/* ================= KPI ================= */}
       <div style={{ display: "flex", gap: "15px", marginBottom: "20px" }}>

@@ -30,3 +30,4 @@ langchain-community
 langchain-huggingface
 langchain-text-splitters
 passlib[bcrypt]
+secure-smtplib

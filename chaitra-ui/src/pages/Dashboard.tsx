@@ -4,12 +4,15 @@ import {
   CartesianGrid, ResponsiveContainer,
   BarChart, Bar
 } from "recharts";
+import { getAuthHeaders } from "../services/api";
 
 const Dashboard = () => {
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    fetch("http://localhost:8000/dashboard")
+    fetch("http://localhost:8000/dashboard",{
+      headers:getAuthHeaders()
+    })
       .then(res => res.json())
       .then(setData);
   }, []);

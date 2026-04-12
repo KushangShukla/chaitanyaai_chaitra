@@ -1,4 +1,5 @@
 import {useState} from "react";
+import { getAuthHeaders } from "../services/api";
 
 const Data=()=> {
     const [file,setFile]=useState<any>(null);
@@ -14,15 +15,18 @@ const Data=()=> {
 
             try
             {
+                const headers=getAuthHeaders();
+                const { ["Content-Type"]: _, ...headersWithoutContentType } = headers; //Important for FormData
                 const res=await fetch("http://localhost:8000/upload-csv",{
                     method:"POST",
+                    headers: headersWithoutContentType,
                     body:formData,
                 });
                 const data=await res.json();
 
                 if (data.status === "success"){
                     setStatus(
-                        'Uploaded: $ {data.table_name} | Rows: ${data.rows}| AutoML Ready'
+                        `Uploaded: ${data.table_name} | Rows: ${data.rows}| AutoML Ready`
                     );
                 } else {
                     setStatus(data.error || "Upload failed");

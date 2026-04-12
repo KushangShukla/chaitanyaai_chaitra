@@ -13,6 +13,8 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import TwoFA from "./pages/TwoFA";
+import ForgotPassword from "./pages/ForgotPassword";
+import EmailOTP from "./pages/EmailOTP";
 import { clearAuthSession, getStoredToken } from "./services/api";
 
 function App() {
@@ -24,6 +26,16 @@ function App() {
   const [authPage, setAuthPage] = useState<"login" | "signup">("login");
   const [authStep, setAuthStep] = useState("login");
 
+  useEffect(() => {
+    const token=localStorage.getItem("auth_token");
+
+    if (token){
+      setAuthStep("app");
+    } else{
+      setAuthStep("login");
+    }
+  },[]);
+  
   //  Cursor Glow Tracking (BACKGROUND EFFECT)
   useEffect(() => {
     const move = (e: any) => {
@@ -63,10 +75,20 @@ function App() {
     }
   };
 
-  if (authStep==="login")
-    return <Login onSuccess={setAuthStep}/>;
-  if (authStep==="2fa")
-    return <TwoFA onSuccess={()=> setAuthStep("app")}/>;
+  if (authStep === "login")
+  return <Login onSuccess={setAuthStep} onSwitch={() => setAuthStep("signup")} />;
+
+  if (authStep === "signup")
+    return <Signup onSuccess={() => setAuthStep("login")} onSwitch={() => setAuthStep("login")} />;
+
+  if (authStep === "2fa")
+    return <TwoFA onSuccess={() => setAuthStep("app")} />;
+
+  if (authStep === "forgot")
+    return <ForgotPassword onSuccess={() => setAuthStep("login")} />;
+
+  if (authStep === "email-otp")
+    return <EmailOTP onSuccess={() => setAuthStep("app")} />;
 
   return (
     <div className="app-container">
@@ -76,7 +98,7 @@ function App() {
             <Login onSuccess={() => setIsAuthenticated(true)} onSwitch={() => setAuthPage("signup")} />
           ) : (
             <Signup onSuccess={() => setIsAuthenticated(true)} onSwitch={() => setAuthPage("login")} />
-          )}
+          )} 
         </main>
       ) : (
         <>

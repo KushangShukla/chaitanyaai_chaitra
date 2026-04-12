@@ -1,6 +1,7 @@
 import {useState} from "react";
 import { useEffect } from "react";
 import { getSettings, updateSettings } from "../services/api";
+import { getAuthHeaders } from "../services/api";
 
 const applyTheme = (nextTheme: string) => {
     document.body.classList.remove("theme-light", "theme-dark");
@@ -58,7 +59,7 @@ const Settings=({ onLogout }: any) => {
     const enable2FA=async()=>{
         const res=await fetch("http://localhost:8000/generate-2fa",{
             method:"POST",
-            headers:{"Content-Type":"application/json"},
+            headers:getAuthHeaders(),
             body:JSON.stringify({user_id:userId}),
         });
         const data=await res.json();
@@ -69,7 +70,7 @@ const Settings=({ onLogout }: any) => {
     const verify2FA=async()=>{
         const res=await fetch("http://localhost:8000/verify-2fa",{
             method:"POST",
-            headers:{"Content-Type":"application/json"},
+            headers:getAuthHeaders(),
             body:JSON.stringify({user_id:userId, otp}),
         });
         const data=await res.json();
