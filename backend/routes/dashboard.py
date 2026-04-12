@@ -1,11 +1,8 @@
-from fastapi import APIRouter 
+from fastapi import APIRouter
 import psycopg2
 import joblib
-import os 
 
-from scripts.services.data_service import *
-
-router=APIRouter()
+router = APIRouter()
 
 def get_connection():
     return psycopg2.connect(
@@ -18,139 +15,117 @@ def get_connection():
 
 @router.get("/dashboard")
 def get_dashboard():
-    conn=get_connection()
-    cursor=conn.cursor()
+    conn = get_connection()
+    cursor = conn.cursor()
 
-    # KPI Queries
+    try:
+        # ================= KPI =================
+        cursor.execute("""
+            SELECT 
+                AVG(weekly_sales),
+                MAX(weekly_sales),
+                MIN(weekly_sales),
+                COUNT(*)
+            FROM walmart_sales_refined
+        """)
 
-    cursor.execute("""
-    SELECT 
-        AVG(weekly_sales),
-        MAX(weekly_sales),
-        MIN(weekly_sales),
-        COUNT(*)
-        FROM walmart_sales_refined
-    """)
+        result = cursor.fetchone()
 
-    row=cursor.fetchone()
+        if not result:
+            return {"error": "No data found"}
 
-    print("KPI Query Result:",row)
-    
-    if row:
-        avg_sales=float(row[0]) if row and row[0] else 0
-        max_sales=float(row[1]) if row and row[0] else 0
-        min_sales=float(row[2]) if row and row[0] else 0
-        total_records=float(row[3]) if row and row[0] else 0
-    
+        avg_sales, max_sales, min_sales, total_records = result
 
-    else:
-        avg_sales=max_sales=min_sales=total_records=0
+        print("KPI Query Result:", result)
 
-    # Trend (last 2 entries)
+        # ================= TREND =================
+        cursor.execute("""
+            SELECT sales_lag_1, sales_lag_2
+            FROM walmart_sales_refined
+            LIMIT 100
+        """)
 
-    cursor.execute("""
-    SELECT
-        AVG(sales_lag_1),
-        AVG(sales_lag_2)
-        FROM walmart_sales_refined
-    """)
+        rows = cursor.fetchall()
 
-    lag1,lag2=cursor.fetchone()
-    trend=lag1-lag2 if lag1 and lag2 else 0
+        trend = 0
+        if rows:
+            diffs = [r[0] - r[1] for r in rows if r[0] and r[1]]
+            if diffs:
+                trend = sum(diffs) / len(diffs)
 
-    # Store Performance
+        # ================= REAL TREND (LAST 10) =================
+        cursor.execute("""
+            SELECT weekly_sales
+            FROM walmart_sales_refined
+            ORDER BY weekly_sales DESC
+            LIMIT 10
+        """)
 
-    cursor.execute("""
-    SELECT 
-        AVG(store_sales_ratio),
-        AVG(dept_sales_ratio)
-        FROM walmart_sales_refined
-    """)
+        trend_data = [row[0] for row in cursor.fetchall()]
 
-    store_ratio,dept_ratio=cursor.fetchone()
+        # ================= STORE PERFORMANCE =================
+        cursor.execute("""
+            SELECT store_avg_sales
+            FROM walmart_sales_refined
+            LIMIT 100
+        """)
 
-    # AUTO INSIGHTS ENGINE
+        store_vals = [r[0] for r in cursor.fetchall() if r[0]]
 
-    insights=[]
+        best_store = max(store_vals) if store_vals else 0
+        worst_store = min(store_vals) if store_vals else 0
 
-    if trend > 0:
-        insights.append("Sales trend is improving based on recent history")
-    
-    else:
-        insights.append("Sales are declining - intervention needed")
+        # ================= FEATURE IMPORTANCE =================
+        try:
+            importance = joblib.load("scripts/ml/feature_importance.pkl")
+        except:
+            importance = {}
 
-    if store_ratio > dept_ratio:
-        insights.append("Store-level performance is stronger than department-level")
-    else:
-        insights.append("Department-level variation is higher-optimize categoires")
-    
-    if avg_sales > 20000:
-        insights.append("Overall sales performance is strong")
-    else:
-        insights.append("Sales performance can be improved")
-    
-    # Explanation
+        # ================= INSIGHTS ENGINE =================
+        insights = []
 
-    explanation=f"""
-    The system analyzed historical lag features to determine the trend.
+        if trend > 0:
+            insights.append(" Sales are increasing recently.")
+        else:
+            insights.append(" Sales are declining — attention needed.")
 
-    Recent sales (lag-1) vs previous sales (lag-2) indicate a 
-    {'positive' if trend > 0 else 'negative'} movement.
+        if avg_sales > 20000:
+            insights.append(" Strong overall store performance.")
+        else:
+            insights.append(" Sales below optimal range.")
 
-    Store ratio:{round(store_ratio,3)}
-    Department ratio:{round(dept_ratio,3)}
+        if best_store > 50000:
+            insights.append(" Some stores performing exceptionally well.")
 
-    This helps identify whether performance variation is store-driven or department-driven.
-    """
+        if worst_store < 5000:
+            insights.append(" Some stores underperforming significantly.")
 
-    # Real Trend Series (last 10 rows)
-    cursor.execute("""
-    SELECT sales_lag_1
-    FROM walmart_sales_refined
-    LIMIT 10               
-    """)
+        # ================= BUSINESS EXPLANATION =================
+        explanation = (
+            "The system analyzes historical sales patterns, lag features, and "
+            "store-level performance metrics to generate predictions and insights. "
+            "Trend signals are derived from recent weekly differences."
+        )
 
-    trend_rows=cursor.fetchall()
+        return {
+            "kpis": {
+                "avg_sales": round(avg_sales, 2),
+                "max_sales": round(max_sales, 2),
+                "min_sales": round(min_sales, 2),
+                "total_records": total_records,
+                "best_store": round(best_store, 2),
+                "worst_store": round(worst_store, 2),
+            },
+            "trend": round(trend, 2),
+            "trend_data": trend_data,
+            "feature_importance": importance,
+            "insights": insights,
+            "explanation": explanation
+        }
 
-    trend_series=[float(r[0]) for r in trend_rows]
+    except Exception as e:
+        return {"error": str(e)}
 
-    # Feature Importance (AutoML)
-    feature_importance={}
-
-    if os.path.exists("scripts/ml/feature_importance.pkl"):
-
-        feature_importance=joblib.load("scripts/ml/feature_importance.pkl")
-
-    # Convert to top features
-    top_features=sorted(
-        feature_importance.items(),
-        key=lambda x:x[1],
-        reverse=True
-    )[:5]
-
-    conn.close()
-
-    data=get_core_data()
-
-    if not data:
-        return {"error":"No data"}
-    
-    insights=generate_insights(data)
-    prediction=generate_prediction(data)
-
-    trend=(data["lag1"] or 0) - (data["lag2"] or 0)
-
-    return {
-        "kpis":{
-            "avg_sales":data["avg_sales"],
-            "max_sales":data["max_sales"],
-            "min_sales":data["min_sales"],
-            "total_records":data["total_records"]
-        },
-        "trend":trend,
-        "insights":insights,
-        "prediction":prediction,
-        "explanation":explanation.strip(),
-        "trend_series":trend_series,
-        "feature_importance":top_features
-    }
+    finally:
+        cursor.close()
+        conn.close()

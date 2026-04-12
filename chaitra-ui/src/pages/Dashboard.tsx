@@ -1,122 +1,107 @@
 import { useEffect, useState } from "react";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
-  ResponsiveContainer, BarChart, Bar
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+  BarChart,
+  Bar
 } from "recharts";
-import { motion } from "framer-motion";
 
 const Dashboard = () => {
   const [data, setData] = useState<any>(null);
 
-  const fetchData = () => {
+  useEffect(() => {
     fetch("http://localhost:8000/dashboard")
       .then(res => res.json())
       .then(setData);
-  };
-
-  useEffect(() => {
-    fetchData();
-
-    //  AUTO REFRESH (LIVE DEMO)
-    const interval = setInterval(fetchData, 5000);
-
-    return () => clearInterval(interval);
   }, []);
 
   if (!data) return <p>Loading dashboard...</p>;
 
   const isPositiveTrend = data.trend > 0;
 
-  //  FORMAT TREND DATA
-  const trendData = data.trend_series?.map((val: number, i: number) => ({
-    name: `T-${data.trend_series.length - i}`,
-    sales: val
-  })) || [];
+  //  Trend chart
+  const trendChart = data.trend_data.map((v: number, i: number) => ({
+    name: `T-${i}`,
+    sales: v
+  }));
 
-  //  FORMAT FEATURE IMPORTANCE
-  const featureData = data.feature_importance?.map((f: any) => ({
-    feature: f[0],
-    value: Number((f[1] * 100).toFixed(2))
-  })) || [];
+  //  Feature importance chart
+  const featureData = data.feature_importance
+    ? Object.entries(data.feature_importance).map(([k, v]) => ({
+        name: k,
+        value: Number(v)
+      }))
+    : [];
 
   return (
-    <div style={{ maxWidth: "1100px", margin: "auto", display: "grid", gap: "20px", padding: "20px" }}>
-      
+    <div style={{ padding: "30px", maxWidth: "1200px", margin: "auto" }}>
       <h2> Business Dashboard</h2>
 
-      {/* KPI CARDS */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
-        {[
-          { label: "Avg Sales", value: data.kpis.avg_sales },
-          { label: "Max Sales", value: data.kpis.max_sales },
-          { label: "Min Sales", value: data.kpis.min_sales },
-          { label: "Records", value: data.kpis.total_records }
-        ].map((card, idx) => (
-          <motion.div key={idx} className="glass glow" whileHover={{ scale: 1.05 }}>
-            <h4>{card.label}</h4>
-            <h2>₹ {card.value}</h2>
-          </motion.div>
-        ))}
+      {/*  KPI CARDS */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))", gap: "15px" }}>
+        <div className="glass">Avg: ₹ {data.kpis.avg_sales}</div>
+        <div className="glass">Max: ₹ {data.kpis.max_sales}</div>
+        <div className="glass">Min: ₹ {data.kpis.min_sales}</div>
+        <div className="glass">Records: {data.kpis.total_records}</div>
+        <div className="glass">Best Store: ₹ {data.kpis.best_store}</div>
+        <div className="glass">Worst Store: ₹ {data.kpis.worst_store}</div>
       </div>
 
-      {/* TREND */}
-      <div className="glass">
+      {/*  TREND */}
+      <div className="glass" style={{ marginTop: "20px", padding: "15px" }}>
         <h3> Sales Trend</h3>
-        <p style={{ color: isPositiveTrend ? "#22c55e" : "#ef4444" }}>
+        <p style={{ color: isPositiveTrend ? "green" : "red" }}>
           {isPositiveTrend ? "Increasing " : "Decreasing "} ({data.trend})
         </p>
-      </div>
 
-      {/*  REAL TIME TREND CHART */}
-      <motion.div className="glass glow" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <h3> Real Sales Trend (Last Data Points)</h3>
-
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={trendData}>
-            <XAxis dataKey="name" stroke="#94a3b8" />
-            <YAxis stroke="#94a3b8" />
+        <ResponsiveContainer width="100%" height={250}>
+          <LineChart data={trendChart}>
+            <XAxis dataKey="name" />
+            <YAxis />
             <Tooltip />
-            <CartesianGrid stroke="#1e293b" />
-            <Line
-              type="monotone"
-              dataKey="sales"
-              stroke="#22c55e"
-              strokeWidth={3}
-              dot={{ r: 3 }}
-            />
+            <CartesianGrid />
+            <Line type="monotone" dataKey="sales" stroke="#22c55e" />
           </LineChart>
         </ResponsiveContainer>
-      </motion.div>
+      </div>
 
       {/*  FEATURE IMPORTANCE */}
-      <motion.div className="glass glow" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <h3> Feature Importance (Model Explainability)</h3>
+      <div className="glass" style={{ marginTop: "20px", padding: "15px" }}>
+        <h3> Feature Importance</h3>
 
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={featureData}>
-            <XAxis dataKey="feature" stroke="#94a3b8" />
-            <YAxis stroke="#94a3b8" />
-            <Tooltip />
-            <CartesianGrid stroke="#1e293b" />
-            <Bar dataKey="value" />
-          </BarChart>
-        </ResponsiveContainer>
-      </motion.div>
+        {featureData.length === 0 ? (
+          <p>No feature importance available</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={featureData}>
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <CartesianGrid />
+              <Bar dataKey="value" fill="#38bdf8" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
 
-      {/* INSIGHTS */}
-      <div className="glass">
+      {/*  INSIGHTS */}
+      <div className="glass" style={{ marginTop: "20px", padding: "15px" }}>
         <h3> AI Insights</h3>
         {data.insights.map((i: string, idx: number) => (
           <p key={idx}>• {i}</p>
         ))}
       </div>
 
-      {/* EXPLANATION */}
-      <div className="glass">
+      {/*  EXPLANATION */}
+      <div className="glass" style={{ marginTop: "20px", padding: "15px" }}>
         <h3> Business Explanation</h3>
         <p>{data.explanation}</p>
       </div>
-
     </div>
   );
 };

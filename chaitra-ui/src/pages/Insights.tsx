@@ -2,23 +2,51 @@ import { useEffect, useState } from "react";
 import { getInsights } from "../services/api";
 
 const Insights = () => {
-  const [insights, setInsights] = useState<string[]>([]);
+  const [data, setData] = useState<any>(null);
+
+  const fetchInsights = () => {
+    getInsights()
+      .then((res) => {
+        console.log("INSIGHTS API:", res); // 🔍 debug
+        setData(res);
+      })
+      .catch(() => setData(null));
+  };
 
   useEffect(() => {
-    getInsights()
-      .then((res) => setInsights(res?.insights || []))
-      .catch(() => setInsights([]));
+    fetchInsights();
+    const interval = setInterval(fetchInsights, 5000);
+    return () => clearInterval(interval);
   }, []);
+
+  if (!data) return <p>Loading insights...</p>;
 
   return (
     <div style={{ padding: "30px" }}>
-      <h2>AI Insights</h2>
+      <h2>🧠 AI Insights</h2>
 
-      <div className="glass" style={{ padding: "16px" }}>
-        {insights.length === 0 ? (
-          <p>No insights available.</p>
+      {/*  CARDS */}
+      <div style={{ display: "flex", gap: "15px", marginBottom: "20px", flexWrap: "wrap" }}>
+        {data?.cards?.length ? (
+          data.cards.map((c: any, i: number) => (
+            <div key={i} className="glass" style={{ padding: "10px", minWidth: "150px" }}>
+              <b>{c.title}</b>
+              <p>{c.value}</p>
+            </div>
+          ))
         ) : (
-          insights.map((item, idx) => <p key={idx}>{item}</p>)
+          <p>No insight cards</p>
+        )}
+      </div>
+
+      {/*  INSIGHTS LIST */}
+      <div className="glass" style={{ padding: "15px" }}>
+        {data?.insights?.length ? (
+          data.insights.map((item: string, idx: number) => (
+            <p key={idx}>• {item}</p>
+          ))
+        ) : (
+          <p>No insights available</p>
         )}
       </div>
     </div>

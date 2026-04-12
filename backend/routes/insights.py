@@ -1,13 +1,12 @@
-from fastapi import APIRouter 
+from fastapi import APIRouter
 import psycopg2
-from scripts.services.data_service import *
 
-router=APIRouter()
+router = APIRouter()
 
 @router.get("/insights")
 def get_insights():
 
-    conn=psycopg2.connect(
+    conn = psycopg2.connect(
         dbname="chaitra_db",
         user="postgres",
         password="root64",
@@ -15,42 +14,57 @@ def get_insights():
         port="5432"
     )
 
-    cursor=conn.cursor()
-    
-    # Get latest stats
+    cursor = conn.cursor()
+
     cursor.execute("""
-    SELECT 
-        AVG(sales_lag_1),
-        AVG(sales_lag_2),
-        AVG(store_sales_ratio),
-        AVG(dept_sales_ratio),
-        AVG(weekly_sales)
-    FROM walmart_sales_refined
+        SELECT 
+            AVG(sales_lag_1),
+            AVG(sales_lag_2),
+            AVG(store_sales_ratio),
+            AVG(dept_sales_ratio),
+            AVG(weekly_sales)
+        FROM walmart_sales_refined
     """)
 
-    lag1,lag2,store_ratio,dept_ratio,avg_sales=cursor.fetchone()
+    row = cursor.fetchone()
 
     cursor.close()
     conn.close()
 
-    insights=[]
+    if not row:
+        return {"cards": [], "insights": []}
 
-    # Dynamic Insights
-    trend=(lag1 or 0) - (lag2 or 0)
+    lag1, lag2, store_ratio, dept_ratio, avg_sales = row
+
+    trend = (lag1 or 0) - (lag2 or 0)
+
+    #  KPI CARDS
+    cards = [
+        {"title": "Avg Sales", "value": round(avg_sales or 0, 2)},
+        {"title": "Trend", "value": "Increasing" if trend > 0 else "Decreasing"},
+        {"title": "Store Strength", "value": round(store_ratio or 0, 2)},
+        {"title": "Dept Impact", "value": round(dept_ratio or 0, 2)}
+    ]
+
+    #  INSIGHTS
+    insights = []
 
     if trend > 0:
-        insights.append("Sales momentum is increasing")
+        insights.append("Sales momentum is increasing ")
     else:
-        insights.append("Sales momentum is declining")
-    
-    if store_ratio > dept_ratio:
-        insights.append("Store-level performance is stronger than departement-level")
-    else:
-        insights.append("Department variations are impacting overall sales")
-    if avg_sales > 20000:
-        insights.append("Sales are below-optimal-consider improvements")
-    else:
-        insights.append("Sales are below optimal-consider improvements")
+        insights.append("Sales momentum is decreasing ")
 
-    data=get_core_data()
-    return {"insights":generate_insights(data)}
+    if store_ratio > dept_ratio:
+        insights.append("Stores are outperforming departments")
+    else:
+        insights.append("Departments are driving variability")
+
+    if avg_sales > 20000:
+        insights.append("Sales performance is strong")
+    else:
+        insights.append("Sales performance needs improvement")
+
+    return {
+        "cards": cards,
+        "insights": insights
+    }

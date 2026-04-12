@@ -5,7 +5,7 @@ model_manager=ModelManager()
 
 def get_db_connection():
     return psycopg2.connect(
-        dbname="chitra_db",
+        dbname="chaitra_db",
         user="postgres",
         password="root64",
         host="localhost",
