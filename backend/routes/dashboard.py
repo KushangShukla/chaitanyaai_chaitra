@@ -3,6 +3,8 @@ import psycopg2
 import joblib
 import os 
 
+from scripts.services.data_service import *
+
 router=APIRouter()
 
 def get_connection():
@@ -128,15 +130,26 @@ def get_dashboard():
 
     conn.close()
 
+    data=get_core_data()
+
+    if not data:
+        return {"error":"No data"}
+    
+    insights=generate_insights(data)
+    prediction=generate_prediction(data)
+
+    trend=(data["lag1"] or 0) - (data["lag2"] or 0)
+
     return {
         "kpis":{
-            "avg_sales":round(avg_sales,2),
-            "max_sales":round(max_sales,2),
-            "min_sales":round(min_sales,2),
-            "total_records":total_records
+            "avg_sales":data["avg_sales"],
+            "max_sales":data["max_sales"],
+            "min_sales":data["min_sales"],
+            "total_records":data["total_records"]
         },
-        "trend":round(trend,2),
+        "trend":trend,
         "insights":insights,
+        "prediction":prediction,
         "explanation":explanation.strip(),
         "trend_series":trend_series,
         "feature_importance":top_features

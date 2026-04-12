@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 import psycopg2
 from scripts.ml.model_manager import ModelManager
+from scripts.services.data_service import *
 
 router=APIRouter()
 model_manager=ModelManager()
@@ -54,4 +55,16 @@ def get_predictions():
             "prediction":float(pred or 0),
             "query":f"Store {r[0]} Dept {r[1]}"
         })
-        return {"predictions":predictions}
+
+        data=get_core_data()
+        return {
+            "predictions":[
+            {
+                "id":1,
+                "prediction":generate_prediction(data),
+                "query":"Live system prediction"
+            }      
+        ]
+    }
+           
+     

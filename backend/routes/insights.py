@@ -1,5 +1,6 @@
 from fastapi import APIRouter 
 import psycopg2
+from scripts.services.data_service import *
 
 router=APIRouter()
 
@@ -15,7 +16,7 @@ def get_insights():
     )
 
     cursor=conn.cursor()
-
+    
     # Get latest stats
     cursor.execute("""
     SELECT 
@@ -50,5 +51,6 @@ def get_insights():
         insights.append("Sales are below-optimal-consider improvements")
     else:
         insights.append("Sales are below optimal-consider improvements")
-    
-    return {"insights":insights}
+
+    data=get_core_data()
+    return {"insights":generate_insights(data)}
