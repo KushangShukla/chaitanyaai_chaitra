@@ -7,7 +7,7 @@ const Insights = () => {
   const fetchInsights = () => {
     getInsights()
       .then((res) => {
-        console.log("INSIGHTS API:", res); // 🔍 debug
+        console.log("INSIGHTS API:", res);
         setData(res);
       })
       .catch(() => setData(null));
@@ -23,13 +23,13 @@ const Insights = () => {
 
   return (
     <div style={{ padding: "30px" }}>
-      <h2>🧠 AI Insights</h2>
+      <h2> AI Insights</h2>
 
-      {/*  CARDS */}
-      <div style={{ display: "flex", gap: "15px", marginBottom: "20px", flexWrap: "wrap" }}>
+      {/* ================= KPI CARDS ================= */}
+      <div style={{ display: "flex", gap: "15px", flexWrap: "wrap" }}>
         {data?.cards?.length ? (
           data.cards.map((c: any, i: number) => (
-            <div key={i} className="glass" style={{ padding: "10px", minWidth: "150px" }}>
+            <div key={i} className="glass" style={{ padding: "12px", minWidth: "150px" }}>
               <b>{c.title}</b>
               <p>{c.value}</p>
             </div>
@@ -39,15 +39,23 @@ const Insights = () => {
         )}
       </div>
 
-      {/*  INSIGHTS LIST */}
-      <div className="glass" style={{ padding: "15px" }}>
+      {/* ================= INSIGHTS LIST ================= */}
+      <div className="glass" style={{ marginTop: "20px", padding: "15px" }}>
         {data?.insights?.length ? (
-          data.insights.map((item: string, idx: number) => (
-            <p key={idx}>• {item}</p>
+          data.insights.map((i: string, idx: number) => (
+            <p key={idx}>• {i}</p>
           ))
         ) : (
           <p>No insights available</p>
         )}
+      </div>
+
+      {/* ================= LLM BLOCK ================= */}
+      <div className="glass" style={{ marginTop: "20px", padding: "15px" }}>
+        <h3> AI Explanation (phi-2)</h3>
+        <p style={{ lineHeight: "1.6", opacity: 0.85 }}>
+          {data?.llm_explanation || "No explanation available"}
+        </p>
       </div>
     </div>
   );

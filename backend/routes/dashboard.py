@@ -1,8 +1,14 @@
 from fastapi import APIRouter
 import psycopg2
 import joblib
+from scripts.services.insight_engine import build_insights
+from scripts.ml.model_manager import ModelManager
 
 router = APIRouter()
+
+model_manager = ModelManager()
+model_manager.load_automl()
+
 
 def get_connection():
     return psycopg2.connect(
@@ -13,6 +19,7 @@ def get_connection():
         port="5432"
     )
 
+
 @router.get("/dashboard")
 def get_dashboard():
     conn = get_connection()
@@ -21,14 +28,10 @@ def get_dashboard():
     try:
         # ================= KPI =================
         cursor.execute("""
-            SELECT 
-                AVG(weekly_sales),
-                MAX(weekly_sales),
-                MIN(weekly_sales),
-                COUNT(*)
+            SELECT AVG(weekly_sales), MAX(weekly_sales),
+                   MIN(weekly_sales), COUNT(*)
             FROM walmart_sales_refined
         """)
-
         result = cursor.fetchone()
 
         if not result:
@@ -36,15 +39,12 @@ def get_dashboard():
 
         avg_sales, max_sales, min_sales, total_records = result
 
-        print("KPI Query Result:", result)
-
         # ================= TREND =================
         cursor.execute("""
             SELECT sales_lag_1, sales_lag_2
             FROM walmart_sales_refined
             LIMIT 100
         """)
-
         rows = cursor.fetchall()
 
         trend = 0
@@ -53,23 +53,21 @@ def get_dashboard():
             if diffs:
                 trend = sum(diffs) / len(diffs)
 
-        # ================= REAL TREND (LAST 10) =================
+        # ================= TREND DATA =================
         cursor.execute("""
             SELECT weekly_sales
             FROM walmart_sales_refined
             ORDER BY weekly_sales DESC
             LIMIT 10
         """)
+        trend_data = [r[0] for r in cursor.fetchall()]
 
-        trend_data = [row[0] for row in cursor.fetchall()]
-
-        # ================= STORE PERFORMANCE =================
+        # ================= STORE =================
         cursor.execute("""
             SELECT store_avg_sales
             FROM walmart_sales_refined
             LIMIT 100
         """)
-
         store_vals = [r[0] for r in cursor.fetchall() if r[0]]
 
         best_store = max(store_vals) if store_vals else 0
@@ -81,32 +79,49 @@ def get_dashboard():
         except:
             importance = {}
 
-        # ================= INSIGHTS ENGINE =================
-        insights = []
+        # ================= ML + LLM =================
+        core_data = {
+            "trend": trend,
+            "avg_sales": avg_sales
+        }
 
-        if trend > 0:
-            insights.append(" Sales are increasing recently.")
-        else:
-            insights.append(" Sales are declining — attention needed.")
+        try:
+            insight_block = build_insights(core_data)
 
-        if avg_sales > 20000:
-            insights.append(" Strong overall store performance.")
-        else:
-            insights.append(" Sales below optimal range.")
+            insights = insight_block.get("insights", [])
+            cards = insight_block.get("cards", [])
+            llm_explanation = insight_block.get("llm_explanation", "")
 
-        if best_store > 50000:
-            insights.append(" Some stores performing exceptionally well.")
+        except Exception as e:
+            print("Insight Engine Failed:", e)
 
-        if worst_store < 5000:
-            insights.append(" Some stores underperforming significantly.")
+            #  FALLBACK
+            insights = []
 
-        # ================= BUSINESS EXPLANATION =================
-        explanation = (
-            "The system analyzes historical sales patterns, lag features, and "
-            "store-level performance metrics to generate predictions and insights. "
-            "Trend signals are derived from recent weekly differences."
-        )
+            if trend > 0:
+                insights.append("Sales are increasing recently.")
+            else:
+                insights.append("Sales are declining — attention needed.")
 
+            if avg_sales > 20000:
+                insights.append("Strong overall store performance.")
+            else:
+                insights.append("Sales below optimal range.")
+
+            if best_store > 50000:
+                insights.append("Some stores performing exceptionally well.")
+
+            if worst_store < 5000:
+                insights.append("Some stores underperforming significantly.")
+
+            cards = [
+                {"title": "Avg Sales", "value": round(avg_sales, 2)},
+                {"title": "Trend", "value": "Increasing" if trend > 0 else "Decreasing"},
+            ]
+
+            llm_explanation = "Fallback explanation used."
+
+        # ================= RETURN =================
         return {
             "kpis": {
                 "avg_sales": round(avg_sales, 2),
@@ -119,8 +134,10 @@ def get_dashboard():
             "trend": round(trend, 2),
             "trend_data": trend_data,
             "feature_importance": importance,
+
             "insights": insights,
-            "explanation": explanation
+            "cards": cards,
+            "llm_explanation": llm_explanation
         }
 
     except Exception as e:

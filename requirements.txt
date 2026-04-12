@@ -29,3 +29,4 @@ pypdf
 langchain-community
 langchain-huggingface
 langchain-text-splitters
+passlib[bcrypt]
