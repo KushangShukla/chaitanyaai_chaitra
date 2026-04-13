@@ -13,6 +13,9 @@ from backend.routes.auth import router as auth_router
 from backend.routes.upload import router as upload_router
 from backend.routes.pdf import router as pdf_router
 from backend.routes.dashboard import router as dashboard_router
+from dotenv import load_dotenv 
+
+load_dotenv()
 
 app = FastAPI(title="CHAITRA AI API")
 app.include_router(query_router)

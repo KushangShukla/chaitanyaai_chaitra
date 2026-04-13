@@ -15,7 +15,7 @@ export const speak = async (
 
     utterance.onboundary=(event:any)=>{
       if(event.name === "word" && onWordChange){
-        onWord(Math.floor(event.charIndex / 5)); // crude estimation
+        //const onWord=()=>{(Math.floor(event.charIndex / 5))}; // crude estimation
       }
     };
 

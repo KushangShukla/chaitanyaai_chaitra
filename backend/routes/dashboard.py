@@ -1,24 +1,16 @@
 from fastapi import APIRouter
 import psycopg2
 import joblib
-from scripts.services.insight_engine import build_insights
-from scripts.ml.model_manager import ModelManager
+from backend.scripts.services.insight_engine import build_insights
+from backend.scripts.ml.model_manager import ModelManager
+from backend.db.connection import get_connection
 
 router = APIRouter()
 
 model_manager = ModelManager()
 model_manager.load_automl()
 
-
-def get_connection():
-    return psycopg2.connect(
-        dbname="chaitra_db",
-        user="postgres",
-        password="root64",
-        host="localhost",
-        port="5432"
-    )
-
+conn=get_connection()
 
 @router.get("/dashboard")
 def get_dashboard():

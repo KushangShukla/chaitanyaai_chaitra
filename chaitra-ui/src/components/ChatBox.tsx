@@ -25,20 +25,22 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
   >([]);
   const [isListening, setIsListening] = useState(false);
   const hasMessages = messages.length > 0;
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  //const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  // 🔥 NEW: highlight state
+  //  NEW: highlight state
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+
+  //const[voiceEnabled,setVoiceEnabled]=useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem("chaitra_settings");
     if (!raw) return;
     try {
-      const parsed = JSON.parse(raw);
-      setVoiceEnabled(parsed.voice_enabled !== false);
+      //const parsed = JSON.parse(raw);
+      //setVoiceEnabled(parsed.voice_enabled !== false);
     } catch {
-      setVoiceEnabled(true);
+      //setVoiceEnabled(true);
     }
   }, []);
 
@@ -89,13 +91,13 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
     };
   };
 
-  // 🛑 STOP LISTENING
+  //  STOP LISTENING
   const stopListening = () => {
     setIsListening(false);
     recognition?.stop();
   };
 
-  // 🔁 RE-RUN EDIT
+  //  RE-RUN EDIT
   const reRunQuery = async (index: number) => {
     const newQuery = messages[index].text;
 
@@ -115,7 +117,7 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
     }
   };
 
-  // 🎤 AUTO SEND
+  //  AUTO SEND
   const handleSendAuto = async (voiceText: string) => {
     if (!voiceText) return;
 
@@ -143,7 +145,7 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
 
         if (data.explanation){
           formatted +="Explanation:\n";
-          data.explanation.forEach((e:string)=>{
+          data.explanation.forEach((_e:string)=>{
             formatted +='• ${e}\n';
           });
         }
@@ -157,7 +159,7 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
     }
   };
 
-  // ⌨️ MANUAL SEND
+  //  MANUAL SEND
   const handleSend = async () => {
     if (!query) return;
 
@@ -185,7 +187,7 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
 
         if (data.explanation){
           formatted +="Explanation:\n";
-          data.explanation.forEach((e:string) =>{
+          data.explanation.forEach((_e:string) =>{
             formatted +='• ${e}\n';
           });
         }
@@ -212,7 +214,7 @@ const ChatBox = ({ selectedChat, onMessageSent }: any) => {
         }}
       >
         {messages.map((msg, i) => {
-          const words = msg.text.split(" ");
+          //const words = msg.text.split(" ");
 
           return (
             <motion.div

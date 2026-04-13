@@ -5,7 +5,7 @@ import re
 import psycopg2
 
 # Import Existing System
-from scripts.orchestrator.query_router import QueryRouter
+from backend.scripts.orchestrator.query_router import QueryRouter
 
 router=APIRouter()
 SALES_DATA_TABLE = "walmart_sales_refined"

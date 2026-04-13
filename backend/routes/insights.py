@@ -1,20 +1,14 @@
 from fastapi import APIRouter
 import psycopg2
-from scripts.services.insight_engine import build_insights
+from backend.scripts.services.insight_engine import build_insights
+from backend.db.connection import get_connection
 
 router = APIRouter()
-
 
 @router.get("/insights")
 def get_insights():
 
-    conn = psycopg2.connect(
-        dbname="chaitra_db",
-        user="postgres",
-        password="root64",
-        host="localhost",
-        port="5432"
-    )
+    conn = get_connection()
 
     cursor = conn.cursor()
 

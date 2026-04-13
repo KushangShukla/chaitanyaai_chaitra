@@ -31,3 +31,7 @@ langchain-huggingface
 langchain-text-splitters
 passlib[bcrypt]
 secure-smtplib
+python-dotenv
+pillow
+python-jose
+joblib

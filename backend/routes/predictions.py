@@ -1,8 +1,9 @@
 from fastapi import APIRouter
 import psycopg2
 import numpy as np
-from scripts.ml.model_manager import ModelManager
-from scripts.services.llm_service import llm_service
+from backend.scripts.ml.model_manager import ModelManager
+from backend.scripts.services.llm_service import llm_service
+from backend.db.connection import get_connection
 
 router = APIRouter()
 
@@ -36,13 +37,8 @@ def enrich_prediction(features):
 @router.get("/predictions")
 def get_predictions():
 
-    conn = psycopg2.connect(
-        dbname="chaitra_db",
-        user="postgres",
-        password="root64",
-        host="localhost",
-        port="5432"
-    )
+    conn = get_connection()
+    
     cursor = conn.cursor()
 
     try:

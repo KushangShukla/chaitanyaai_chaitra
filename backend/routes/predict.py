@@ -4,7 +4,7 @@ import numpy as np
 import psycopg2
 import datetime
 
-from scripts.ml.model_manager import ModelManager
+from backend.scripts.ml.model_manager import ModelManager
 
 model_manager=ModelManager()
 model_manager.load_automl()
