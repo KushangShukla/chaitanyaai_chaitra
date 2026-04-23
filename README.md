@@ -168,3 +168,325 @@ FastAPI Backend
       ├── XGBoost Model
       ├── FAISS Vector Store
       └── LLM / Response Layer
+
+# System Architecture Workflow
+
+The CHAITRA platform follows a multi-stage workflow where user requests are processed through modular services for analytics, prediction, retrieval, and intelligent response generation.
+
+User Access
+   ↓
+Frontend Interface (React Dashboard)
+   ↓
+Authentication Check
+   ↓
+Request Routing (FastAPI Backend)
+   ↓
+Choose Operation
+   ├── CSV Upload
+   │      ↓
+   │   Data Validation
+   │      ↓
+   │   PostgreSQL Storage
+   │      ↓
+   │   Preprocessing Pipeline
+   │      ↓
+   │   Feature Engineering
+   │      ↓
+   │   XGBoost Prediction
+   │      ↓
+   │   KPI + Charts Output
+   │
+   ├── Natural Language Query
+   │      ↓
+   │   Intent Detection
+   │      ↓
+   │   Query Router
+   │      ├── SQL Retrieval Path
+   │      ├── Prediction Path
+   │      ├── RAG Retrieval Path
+   │      └── LLM Reasoning Path
+   │      ↓
+   │   Natural Language Response
+   │
+   ├── PDF Upload
+   │      ↓
+   │   Text Extraction
+   │      ↓
+   │   Embedding Creation
+   │      ↓
+   │   FAISS Vector Storage
+   │
+   └── Voice Interaction
+          ↓
+       Speech-to-Text
+          ↓
+       Query Processing
+          ↓
+       Text-to-Speech Response
+Core Modules
+
+1. Authentication Module
+Supports secure account access:
+Signup
+Login
+Password hashing
+JWT token sessions
+
+2. Dashboard Module
+Displays:
+KPI cards
+Forecast outputs
+Trend charts
+Business metrics
+
+3. Prediction Module
+Used for structured forecasting tasks.
+Current implementation uses:
+XGBoost Regressor
+
+4. Query Intelligence Module
+Supports user questions such as:
+Explain current trend
+What is predicted next?
+Why did sales change?
+Show important factors
+
+5. RAG Module
+Used for contextual retrieval from uploaded content:
+PDF ingestion
+Embedding generation
+FAISS search
+Context-aware responses
+
+6. Voice Module
+Supports:
+Speech-to-Text input
+Text-to-Speech output
+
+Machine Learning Pipeline
+Raw Dataset
+   ↓
+Validation
+   ↓
+Cleaning
+   ↓
+Outlier Handling
+   ↓
+Encoding
+   ↓
+Normalization
+   ↓
+Feature Engineering
+   ↓
+Feature Selection
+   ↓
+ML Ready Dataset
+   ↓
+XGBoost Training
+   ↓
+Prediction Output
+
+Model Used
+XGBoost Regressor
+Evaluation Metrics
+MAE
+RMSE
+R² Score
+
+Natural Language Query System
+CHAITRA supports business query interaction.
+
+Flow
+User Query
+   ↓
+Intent Detection
+   ↓
+Route Decision
+   ├── Database Query Path
+   ├── Prediction Path
+   ├── RAG Retrieval Path
+   └── LLM Explanation Path
+   ↓
+Natural Language Response
+
+Voice Features
+Speech-to-Text
+User can speak instead of typing.
+Text-to-Speech
+System can read responses aloud.
+
+Useful for:
+Accessibility
+Hands-free usage
+Faster interaction
+
+Repository Structure
+chaitanyaai_chaitra/
+│
+├── frontend/
+│   ├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+│
+├── backend/
+│   ├── main.py
+│   ├── routes/
+│   ├── scripts/
+│   │   ├── ml/
+│   │   ├── rag/
+│   │   ├── auth/
+│   │   └── orchestrator/
+│   └── requirements.txt
+│
+├── docker-compose.yml
+├── nginx/
+├── docs/
+└── README.md
+
+API Endpoints
+
+Authentication
+POST /auth/signup
+POST /auth/login
+
+Upload
+POST /upload
+POST /upload/pdf
+
+Prediction
+POST /predict
+GET /predictions/latest
+
+Query
+POST /query
+
+Health
+GET /docs
+GET /health
+
+Database Design
+Examples of tables used in the project:
+User Tables
+users
+user_settings
+Interaction Tables
+chat_history
+query_logs
+Dataset Tables
+training_data
+walmart_sales
+walmart_sales_cleaned
+walmart_sales_ml_ready
+Output Tables
+predictions
+analytics_results
+
+Local Setup
+1. Clone Repository
+git clone https://github.com/KushangShukla/chaitanyaai_chaitra.git
+cd chaitanyaai_chaitra
+
+2. Configure Environment
+Create .env
+DATABASE_URL=postgresql://user:password@db:5432/chaitra
+JWT_SECRET=your_secret
+
+3. Run with Docker
+docker-compose up --build
+
+4. Access
+
+Frontend:
+http://localhost:3000
+
+Backend:
+http://localhost:8000/docs
+
+Docker Deployment
+Services supported:
+frontend
+backend
+postgres
+
+Production-ready improvements:
+Reverse proxy via Nginx
+HTTPS with SSL
+Environment isolation
+Container scaling
+
+Configuration Notes
+For lightweight deployment environments:
+Disable local LLM runtime
+Keep prediction APIs enabled
+Keep dashboard enabled
+Keep PostgreSQL active
+Useful for low-memory cloud instances.
+
+Screenshots / Outputs:
+Login page
+Signup page
+Dashboard
+KPI cards
+Prediction outputs
+Chat interface
+Voice features
+PostgreSQL tables
+Docker running containers
+AWS deployment page
+Testing
+Covered Areas
+Authentication
+CSV upload
+Prediction APIs
+Query responses
+Dashboard rendering
+Database writes
+Docker services
+Voice features
+Example Checks
+Valid login
+Invalid login rejection
+Successful prediction response
+Correct chart rendering
+Query output generation
+Security
+
+Implemented controls:
+JWT authentication
+Password hashing
+Protected routes
+Session handling
+Input validation
+
+Recommended next steps:
+Role-based access control
+Audit logging
+Rate limiting
+HTTPS enforcement
+
+Performance Notes
+Modular architecture improves maintainability
+XGBoost offers strong structured-data performance
+RAG improves contextual answers
+LLM can be disabled for lightweight deployment
+
+Future Improvements
+Multi-tenant SaaS architecture
+Real-time streaming analytics
+AutoML training workflows
+Role-based enterprise access
+Full cloud LLM deployment
+Scheduled reporting engine
+Advanced anomaly detection
+
+Contributors
+Kushang Shukla
+AI / ML Engineer Intern
+
+License
+This repository is intended for academic, research, and demonstration purposes unless otherwise specified.
+
+Project Summary
+CHAITRA demonstrates how modern analytics systems can move beyond static dashboards into intelligent decision platforms by combining machine learning, retrieval systems, and natural language interaction in one scalable architecture.
+
