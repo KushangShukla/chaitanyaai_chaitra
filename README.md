@@ -150,6 +150,8 @@ Users can upload business datasets, generate predictions, view KPI dashboards, a
 # System Architecture
 
 
+System Architecture
+
 User
  │
  ▼
@@ -164,65 +166,147 @@ FastAPI Backend
  ├── Voice Services
  └── Dashboard APIs
       │
-      ├── PostgreSQL
-      ├── XGBoost Model
+      ├── PostgreSQL Database
+      ├── XGBoost Prediction Model
       ├── FAISS Vector Store
-      └── LLM / Response Layer
-
+      └── LLM Response Layer
+      
 # System Architecture Workflow
 
 The CHAITRA platform follows a multi-stage workflow where user requests are processed through modular services for analytics, prediction, retrieval, and intelligent response generation.
 
+System Workflow
+
 User Access
-   ↓
+    │
+    ▼
 Frontend Interface (React Dashboard)
-   ↓
+    │
+    ▼
 Authentication Check
-   ↓
+    │
+    ▼
 Request Routing (FastAPI Backend)
-   ↓
+    │
+    ▼
 Choose Operation
-   ├── CSV Upload
-   │      ↓
-   │   Data Validation
-   │      ↓
-   │   PostgreSQL Storage
-   │      ↓
-   │   Preprocessing Pipeline
-   │      ↓
-   │   Feature Engineering
-   │      ↓
-   │   XGBoost Prediction
-   │      ↓
-   │   KPI + Charts Output
-   │
-   ├── Natural Language Query
-   │      ↓
-   │   Intent Detection
-   │      ↓
-   │   Query Router
-   │      ├── SQL Retrieval Path
-   │      ├── Prediction Path
-   │      ├── RAG Retrieval Path
-   │      └── LLM Reasoning Path
-   │      ↓
-   │   Natural Language Response
-   │
-   ├── PDF Upload
-   │      ↓
-   │   Text Extraction
-   │      ↓
-   │   Embedding Creation
-   │      ↓
-   │   FAISS Vector Storage
-   │
-   └── Voice Interaction
-          ↓
-       Speech-to-Text
-          ↓
-       Query Processing
-          ↓
-       Text-to-Speech Response
+    │
+    ├──────────────────────────────────────────────┐
+    │                                              │
+    ▼                                              ▼
+
+CSV Upload                                  Natural Language Query
+    │                                              │
+    ▼                                              ▼
+Data Validation                            Intent Detection
+    │                                              │
+    ▼                                              ▼
+PostgreSQL Storage                         Query Router
+    │                                              │
+    ▼                                              ├── SQL Retrieval Path
+Preprocessing Pipeline                      ├── Prediction Path
+    │                                       ├── RAG Retrieval Path
+    ▼                                       └── LLM Reasoning Path
+Feature Engineering                               │
+    │                                              ▼
+    ▼                                      Natural Language Response
+XGBoost Prediction
+    │
+    ▼
+KPI Metrics & Dashboard Charts
+
+
+PDF Upload
+    │
+    ▼
+Text Extraction
+    │
+    ▼
+Embedding Generation
+    │
+    ▼
+FAISS Vector Storage
+    │
+    ▼
+Document Retrieval & Question Answering
+
+
+Voice Interaction
+    │
+    ▼
+Speech-to-Text
+    │
+    ▼
+Query Processing
+    │
+    ▼
+Text-to-Speech ResponseSystem Workflow
+
+User Access
+    │
+    ▼
+Frontend Interface (React Dashboard)
+    │
+    ▼
+Authentication Check
+    │
+    ▼
+Request Routing (FastAPI Backend)
+    │
+    ▼
+Choose Operation
+    │
+    ├──────────────────────────────────────────────┐
+    │                                              │
+    ▼                                              ▼
+
+CSV Upload                                  Natural Language Query
+    │                                              │
+    ▼                                              ▼
+Data Validation                            Intent Detection
+    │                                              │
+    ▼                                              ▼
+PostgreSQL Storage                         Query Router
+    │                                              │
+    ▼                                              ├── SQL Retrieval Path
+Preprocessing Pipeline                      ├── Prediction Path
+    │                                       ├── RAG Retrieval Path
+    ▼                                       └── LLM Reasoning Path
+Feature Engineering                               │
+    │                                              ▼
+    ▼                                      Natural Language Response
+XGBoost Prediction
+    │
+    ▼
+KPI Metrics & Dashboard Charts
+
+
+PDF Upload
+    │
+    ▼
+Text Extraction
+    │
+    ▼
+Embedding Generation
+    │
+    ▼
+FAISS Vector Storage
+    │
+    ▼
+Document Retrieval & Question Answering
+
+
+Voice Interaction
+    │
+    ▼
+Speech-to-Text
+    │
+    ▼
+Query Processing
+    │
+    ▼
+Text-to-Speech Response
+
 Core Modules
 
 1. Authentication Module
@@ -321,13 +405,18 @@ Hands-free usage
 Faster interaction
 
 Repository Structure
+Repository Structure
+
 chaitanyaai_chaitra/
 │
 ├── frontend/
 │   ├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   └── services/
+│   │
+│   ├── public/
+│   └── package.json
 │
 ├── backend/
 │   ├── main.py
@@ -336,12 +425,18 @@ chaitanyaai_chaitra/
 │   │   ├── ml/
 │   │   ├── rag/
 │   │   ├── auth/
-│   │   └── orchestrator/
+│   │   ├── memory/
+│   │   ├── orchestrator/
+│   │   └── utils/
+│   │
 │   └── requirements.txt
 │
-├── docker-compose.yml
 ├── nginx/
+│
 ├── docs/
+│
+├── docker-compose.yml
+│
 └── README.md
 
 API Endpoints
